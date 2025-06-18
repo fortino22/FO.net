@@ -4,8 +4,8 @@
 CPP      = g++.exe
 CC       = gcc.exe
 WINDRES  = windres.exe
-OBJ      = main.o avl.o task_management.o worldmap.o start_game.o citymap.o
-LINKOBJ  = main.o avl.o task_management.o worldmap.o start_game.o citymap.o
+OBJ      = main.o avl.o task_management.o worldmap.o start_game.o citymap.o housemap.o
+LINKOBJ  = main.o avl.o task_management.o worldmap.o start_game.o citymap.o housemap.o
 LIBS     = -L"C:/a/MinGW64/lib" -L"C:/a/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc
 INCS     = -I"C:/a/MinGW64/include" -I"C:/a/MinGW64/x86_64-w64-mingw32/include" -I"C:/a/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
 CXXINCS  = -I"C:/a/MinGW64/include" -I"C:/a/MinGW64/x86_64-w64-mingw32/include" -I"C:/a/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"C:/a/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
@@ -41,3 +41,6 @@ start_game.o: start_game.cpp
 
 citymap.o: citymap.cpp
 	$(CPP) -c citymap.cpp -o citymap.o $(CXXFLAGS)
+
+housemap.o: housemap.cpp
+	$(CPP) -c housemap.cpp -o housemap.o $(CXXFLAGS)

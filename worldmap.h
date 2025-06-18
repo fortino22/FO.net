@@ -1,3 +1,5 @@
+#include "citymap.h" 
+
 #ifndef WORLDMAP_H
 #define WORLDMAP_H
 
@@ -10,7 +12,6 @@
 #define WIDTH   100
 #define HEIGHT 30
 #define MAX_COUNTRIES 5
-#define FRAME_DELAY 30000
 #define MAX_VERTICES 15
 #define COUNTRY_MARGIN 5
 
@@ -21,6 +22,12 @@ typedef struct {
     int baseRadius;  
     int valid;  
     char *name;  
+    int cityGenerated;  
+    int cityNumChunks;  
+    char savedCityMap[CITY_HEIGHT][CITY_WIDTH];   
+    Chunk savedChunks[MAX_CHUNKS]; 
+    int lastCityPlayerX;
+    int lastCityPlayerY;             
 } Country;
 
 typedef struct {

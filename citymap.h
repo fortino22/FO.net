@@ -7,6 +7,9 @@
 #include <time.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include  "housemap.h"
+
+
 
 #define CITY_WIDTH  70
 #define CITY_HEIGHT 30
@@ -14,11 +17,14 @@
 #define FRAME_DELAY 20000
 #define CHUNK_MARGIN 5
 
-typedef struct {
+
+
+typedef struct Chunk {
     int x, y;         
     int width;        
     int height;     
-    int valid;      
+    int valid;  
+    HouseNode* houseRoot;    
 } Chunk;
 
 typedef struct {
@@ -44,4 +50,5 @@ void movePlayerInCity(char direction);
 int initializeCity(int numChunks);
 void citySandbox(void);
 void addSimplifiedCrossRoads(void);
+
 #endif

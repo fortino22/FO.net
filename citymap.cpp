@@ -1,3 +1,5 @@
+#include "worldmap.h"
+
 #include "citymap.h"
 #include <float.h>
 #include <string.h>
@@ -79,6 +81,10 @@ void fillChunk(int x, int y, int width, int height) {
 
 void generateCityChunks(int count) {
     memset(chunks, 0, sizeof(chunks));
+
+    for (int i = 0; i < MAX_CHUNKS; ++i) {
+        chunks[i].houseRoot = NULL;
+    }
 
     if (count < 4) count = 4;
     if (count > MAX_CHUNKS) count = MAX_CHUNKS;
@@ -464,6 +470,33 @@ void movePlayerInCity(char direction) {
 }
 
 
+
+
+void enterHouseGridForCurrentCity() {
+    for (int i = 0; i < MAX_CHUNKS; ++i) {
+        if (chunks[i].valid) {
+            int left = chunks[i].x - chunks[i].width/2;
+            int right = chunks[i].x + chunks[i].width/2;
+            int top = chunks[i].y - chunks[i].height/2;
+            int bottom = chunks[i].y + chunks[i].height/2;
+            if (cityPlayerX >= left && cityPlayerX < right &&
+                cityPlayerY >= top && cityPlayerY < bottom) {
+                if (chunks[i].houseRoot == NULL) {
+                    chunks[i].houseRoot = NULL;
+                }
+                printf("\nEntering house placement for this city chunk!\n");
+                housePlacementLoopForChunk(&chunks[i]);
+                printCityMap();
+                return;
+            }
+        }
+    }
+    printf("You are not on a city chunk!\n");
+}
+
+
+
+
 int initializeCity(int numChunks) {
     numChunks = 4 + (rand() % 3);
     
@@ -472,6 +505,13 @@ int initializeCity(int numChunks) {
     
     clearCityMap();
     generateCityChunks(numChunks);
+    
+    for (int i = 0; i < MAX_CHUNKS; ++i) {
+        if (chunks[i].houseRoot != NULL) {
+            freeHouseTree(chunks[i].houseRoot);
+        }
+        chunks[i].houseRoot = NULL;
+    }
     
     printf("Building city roads using Prim's algorithm...\n");
     primMST(numChunks);
@@ -488,14 +528,19 @@ int initializeCity(int numChunks) {
     return validCount;
 }
 
+
+
+extern int currentCountryId; // Set this before entering the city!
+extern Country countries[];  // Your global countries array
+
 void citySandbox() {
     char move;
     int running = 1;
 
-    printf("\nWelcome to the city! Use WASD to move, 'q' to quit\n");
+    printf("\nWelcome to the city! Use WASD to move, 'e' to enter city, 'q' to quit\n");
 
     while (running) {
-        printf("Move direction (w/a/s/d, q to quit): ");
+        printf("Move direction (w/a/s/d, e to enter city, q to quit): ");
         fflush(stdout);
 
         move = getchar();
@@ -512,9 +557,29 @@ void citySandbox() {
 
             printf("\033[H\033[J");
             printCityMap();
+        } else if (move == 'e' || move == 'E') {
+            enterHouseGridForCurrentCity();
+            printf("\033[H\033[J");
+            printCityMap();
         } else {
-            printf("Invalid input. Use w/a/s/d to move, q to quit.\n");
+            printf("Invalid input. Use w/a/s/d to move, e to enter city, q to quit.\n");
             fflush(stdout);
         }
+    }
+
+    if (currentCountryId >= 0) {
+        memcpy(countries[currentCountryId].savedCityMap, cityMap, sizeof(cityMap));
+        for (int i = 0; i < MAX_CHUNKS; ++i) {
+            freeHouseTree(countries[currentCountryId].savedChunks[i].houseRoot);
+            // Copy all fields except houseRoot
+            countries[currentCountryId].savedChunks[i].x = chunks[i].x;
+            countries[currentCountryId].savedChunks[i].y = chunks[i].y;
+            countries[currentCountryId].savedChunks[i].width = chunks[i].width;
+            countries[currentCountryId].savedChunks[i].height = chunks[i].height;
+            countries[currentCountryId].savedChunks[i].valid = chunks[i].valid;
+            countries[currentCountryId].savedChunks[i].houseRoot = copyHouseTree(chunks[i].houseRoot);
+        }
+        countries[currentCountryId].lastCityPlayerX = cityPlayerX;
+        countries[currentCountryId].lastCityPlayerY = cityPlayerY;
     }
 }
