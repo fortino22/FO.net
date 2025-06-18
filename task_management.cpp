@@ -2,18 +2,196 @@
 #include <stdlib.h>
 #include <string.h>
 #include "task_management.h"
+#include <conio.h>
+#include "worldmap.h"
+
+void getInput(char* buffer, int size, const char* prompt) {
+    printf("%s", prompt);
+    fgets(buffer, size, stdin);
+    buffer[strcspn(buffer, "\n")] = 0; 
+}
+
+void getPasswordInput(char* buffer, int size, const char* prompt) {
+    printf("%s", prompt);
+    int i = 0;
+    char ch;
+    while (1) {
+        ch = _getch();
+        if (ch == 13) { 
+            buffer[i] = '\0';
+            break;
+        } else if (ch == 8) { 
+            if (i > 0) {
+                i--;
+                printf("\b \b"); 
+            }
+        } else if (ch == 27) { 
+            buffer[0] = '\0';
+            break;
+        } else if (i < size - 1) { 
+            buffer[i++] = ch;
+            printf("*");
+        }
+    }
+    printf("\n");
+}
+
+void getValidStatus(char* buffer, int size) {
+    int validStatus = 0;
+    while (!validStatus) {
+        getInput(buffer, size, "Enter new status (pending, in-progress, completed): ");
+        
+        if (strcmp(buffer, "pending") == 0 || 
+            strcmp(buffer, "in-progress") == 0 || 
+            strcmp(buffer, "completed") == 0) {
+            validStatus = 1;
+        } else {
+            printf("Invalid status. Must be exactly 'pending', 'in-progress', or 'completed'.\n");
+        }
+    }
+}
+
+
+void startAssignment(AssignmentNode** root, int workerId) {
+    // Initialize the world map
+    printf("\033[2J\033[H"); // Clear screen
+    int numCountries = 5;
+    int validCount = initializeWorld(numCountries);
+    
+    if (validCount <= 0) {
+        printf("Failed to generate countries. Please try again.\n");
+        return;
+    }
+    
+    // Get all assignments for the worker
+    int assignmentCount = 0;
+    AssignmentNode* currentAssignments[10]; // Array to store pointers to assignments
+    int selectedAssignment = 0; // Currently selected assignment index
+    
+    // Collect worker assignments
+    collectUserAssignments(*root, workerId, currentAssignments, &assignmentCount);
+    
+    if (assignmentCount == 0) {
+        printf("You don't have any assignments yet.\n");
+        printf("Press Enter to return...");
+        getchar();
+        return;
+    }
+    
+    // Start interactive mode with map and assignments
+    char input;
+    int running = 1;
+    
+    while (running) {
+        // Print the map on the left side
+        printf("\033[H"); // Move cursor to top
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH/2; x++) { // Use half width for map
+                int mapX = x * 2; // Scale x to maintain aspect ratio
+                if (showPlayer && mapX == playerX && y == playerY) {
+                    printf("\033[31mP\033[0m");
+                } else if (mapX < WIDTH && map[y][mapX] == '#') {
+                    printf("\033[32m#\033[0m");
+                } else if (mapX < WIDTH && map[y][mapX] == '.') {
+                    printf("\033[34m.\033[0m");
+                } else if (mapX < WIDTH && map[y][mapX] == '+') {
+                    printf("\033[33m+\033[0m");
+                } else if (mapX < WIDTH && map[y][mapX] == '=') {
+                    printf("\033[35m=\033[0m");
+                } else {
+                    putchar('.');
+                }
+            }
+            
+            // Print assignment details on the right side
+            if (y == 1) printf("  | \033[1mYOUR ASSIGNMENTS\033[0m");
+            else if (y == 2) printf("  | Use up/down arrows to select, u to update status");
+            else if (y >= 4 && y < 4 + assignmentCount) {
+                int idx = y - 4;
+                if (idx == selectedAssignment) {
+                    printf("  | \033[7m→ %d: %s (%s)\033[0m", 
+                        currentAssignments[idx]->assignment.assignmentId, 
+                        currentAssignments[idx]->assignment.title,
+                        currentAssignments[idx]->assignment.status);
+                } else {
+                    printf("  | %d: %s (%s)", 
+                        currentAssignments[idx]->assignment.assignmentId, 
+                        currentAssignments[idx]->assignment.title,
+                        currentAssignments[idx]->assignment.status);
+                }
+            }
+            else if (y == 4 + assignmentCount + 2) printf("  | \033[1mCONTROLS:\033[0m");
+            else if (y == 4 + assignmentCount + 3) printf("  | w/a/s/d - Move player");
+            else if (y == 4 + assignmentCount + 4) printf("  | u - Update selected task status");
+            else if (y == 4 + assignmentCount + 5) printf("  | Up/Down - Select assignment");
+            else if (y == 4 + assignmentCount + 6) printf("  | q - Return to menu");
+            
+            printf("\n");
+        }
+        
+        printf("Action (w/a/s/d to move, u to update, ↑/↓ to select, q to quit): ");
+        input = _getch();
+        
+        if (input == 'q') {
+            running = 0;
+        } else if (input == 'u' && assignmentCount > 0) {
+            // Update status of selected assignment
+            char newStatus[20];
+            printf("\033[%d;%dH", HEIGHT + 2, 0); // Move cursor below the map
+            printf("                                                                              \n"); // Clear line
+            printf("                                                                              \n"); // Clear line
+            
+            getValidStatus(newStatus, 20);
+            
+            // Update assignment status
+            *root = updateAssignmentStatus(*root, currentAssignments[selectedAssignment]->assignment.assignmentId, newStatus);
+            
+            // Update our local cache
+            currentAssignments[selectedAssignment] = searchAssignment(*root, currentAssignments[selectedAssignment]->assignment.assignmentId);
+            
+            printf("Status updated to: %s\n", newStatus);
+            printf("Press any key to continue...");
+            _getch();
+            
+            // Save changes
+            saveAssignmentsToFile(*root, ASSIGNMENTS_FILE);
+        } else if (input == 'w' || input == 'a' || input == 's' || input == 'd') {
+            movePlayer(input);
+        } else if (input == 224) { // Arrow key prefix
+            input = _getch(); // Get the actual arrow key
+            if (input == 72 && selectedAssignment > 0) { // Up arrow
+                selectedAssignment--;
+            } else if (input == 80 && selectedAssignment < assignmentCount - 1) { // Down arrow
+                selectedAssignment++;
+            }
+        }
+    }
+    
+    printf("\n\033[0mReturning to work menu...\n");
+}
+
+
+
+
+void collectUserAssignments(AssignmentNode* root, int userId, AssignmentNode* assignments[], int* count) {
+    if (!root) return;
+    
+    collectUserAssignments(root->left, userId, assignments, count);
+    
+    if (root->assignment.userId == userId) {
+        assignments[*count] = root;
+        (*count)++;
+    }
+    
+    collectUserAssignments(root->right, userId, assignments, count);
+}
 
 void registerUser(AVLNode** root) {
     char username[50], password[50];
     printf("\n===== Registration =====\n");
     
-    printf("Enter username: ");
-    fgets(username, 50, stdin);
-    username[strcspn(username, "\n")] = 0; 
-    
-    printf("Enter password: ");
-    fgets(password, 50, stdin);
-    password[strcspn(password, "\n")] = 0; 
+    getInput(username, 50, "Enter username: ");
+    getPasswordInput(password, 50, "Enter password: ");
     
     char role[20] = "worker";
     
@@ -33,13 +211,8 @@ void loginUser(AVLNode* root, AssignmentNode** assignmentRoot) {
     char username[50], password[50];
     printf("\n===== Login =====\n");
     
-    printf("Enter username: ");
-    fgets(username, 50, stdin);
-    username[strcspn(username, "\n")] = 0; 
-    
-    printf("Enter password: ");
-    fgets(password, 50, stdin);
-    password[strcspn(password, "\n")] = 0; 
+    getInput(username, 50, "Enter username: ");
+    getPasswordInput(password, 50, "Enter password: ");
     
     AVLNode* user = search(root, username);
     if (user && strcmp(user->user.password, password) == 0) {
@@ -112,8 +285,9 @@ void workerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int workerId) {
     int choice;
     do {
         printf("\n===== Worker Menu =====\n");
-        printf("1. View My Tasks\n");
+        printf("1. Start Assignment\n");
         printf("2. Update Task Status\n");
+        printf("3. View My Tasks\n");
         printf("0. Logout\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
@@ -121,11 +295,14 @@ void workerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int workerId) {
         
         switch (choice) {
             case 1:
-                displayUserAssignments(*assignmentRoot, workerId);
+                startAssignment(assignmentRoot, workerId);
                 break;
             case 2:
                 updateTaskStatus(assignmentRoot, workerId);
                 saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE);
+                break;
+            case 3:
+                displayUserAssignments(*assignmentRoot, workerId);
                 break;
             case 0:
                 printf("Logging out...\n");
@@ -154,13 +331,8 @@ void assignTask(AVLNode* root, AssignmentNode** assignmentRoot, int managerId) {
         return;
     }
     
-    printf("Enter task title: ");
-    fgets(title, 100, stdin);
-    title[strcspn(title, "\n")] = 0; 
-    
-    printf("Enter task description: ");
-    fgets(description, 500, stdin);
-    description[strcspn(description, "\n")] = 0; 
+    getInput(title, 100, "Enter task title: ");
+    getInput(description, 500, "Enter task description: ");
     
     int assignmentId = generateRandomId();
     
@@ -213,7 +385,6 @@ void viewAssignedTasks(AssignmentNode* root, int userId) {
 void updateTaskStatus(AssignmentNode** root, int workerId) {
     int assignmentId;
     char status[20];
-    int validStatus = 0;
     
     displayUserAssignments(*root, workerId);
     
@@ -229,19 +400,7 @@ void updateTaskStatus(AssignmentNode** root, int workerId) {
     
     printf("Current status: %s\n", assignment->assignment.status);
     
-    while (!validStatus) {
-        printf("Enter new status (pending, in-progress, completed): ");
-        fgets(status, 20, stdin);
-        status[strcspn(status, "\n")] = 0; 
-        
-        if (strcmp(status, "pending") == 0 || 
-            strcmp(status, "in-progress") == 0 || 
-            strcmp(status, "completed") == 0) {
-            validStatus = 1;
-        } else {
-            printf("Invalid status. Must be exactly 'pending', 'in-progress', or 'completed'.\n");
-        }
-    }
+    getValidStatus(status, 20);
     
     *root = updateAssignmentStatus(*root, assignmentId, status);
     printf("Task status updated successfully!\n");

@@ -4,8 +4,8 @@
 CPP      = g++.exe
 CC       = gcc.exe
 WINDRES  = windres.exe
-OBJ      = main.o avl.o task_management.o
-LINKOBJ  = main.o avl.o task_management.o
+OBJ      = main.o avl.o task_management.o worldmap.o
+LINKOBJ  = main.o avl.o task_management.o worldmap.o
 LIBS     = -L"C:/a/MinGW64/lib" -L"C:/a/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc
 INCS     = -I"C:/a/MinGW64/include" -I"C:/a/MinGW64/x86_64-w64-mingw32/include" -I"C:/a/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
 CXXINCS  = -I"C:/a/MinGW64/include" -I"C:/a/MinGW64/x86_64-w64-mingw32/include" -I"C:/a/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"C:/a/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
@@ -32,3 +32,6 @@ avl.o: avl.cpp
 
 task_management.o: task_management.cpp
 	$(CPP) -c task_management.cpp -o task_management.o $(CXXFLAGS)
+
+worldmap.o: worldmap.cpp
+	$(CPP) -c worldmap.cpp -o worldmap.o $(CXXFLAGS)

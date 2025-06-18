@@ -35,4 +35,6 @@ void inorderTraversalUsers(AVLNode* root);
 
 void inorderTraversalWorkers(AVLNode* root);
 
+void collectUserAssignments(AssignmentNode* root, int userId, AssignmentNode* assignments[], int* count);
+
 #endif 
