@@ -73,7 +73,7 @@ void managerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int managerId) 
         switch (choice) {
             case 1:
                 assignTask(root, assignmentRoot, managerId);
-                saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE); // Save after assignment
+                saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE);
                 break;
             case 2:
                 displayAllAssignments(*assignmentRoot);
@@ -85,13 +85,15 @@ void managerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int managerId) 
                 viewWorkers(root);
                 break;
             case 5: {
+                printf("\n--- All Available Assignments ---\n");
+                displayAllAssignments(*assignmentRoot);
                 int assignmentId;
                 printf("Enter Assignment ID to delete: ");
                 scanf("%d", &assignmentId);
-                getchar(); // Clear buffer
+                getchar(); 
                 *assignmentRoot = deleteAssignment(*assignmentRoot, assignmentId);
                 printf("Assignment deleted successfully (if it existed).\n");
-                saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE); // Save after deletion
+                saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE); 
                 break;
             }
             case 6:
@@ -211,6 +213,7 @@ void viewAssignedTasks(AssignmentNode* root, int userId) {
 void updateTaskStatus(AssignmentNode** root, int workerId) {
     int assignmentId;
     char status[20];
+    int validStatus = 0;
     
     displayUserAssignments(*root, workerId);
     
@@ -225,15 +228,19 @@ void updateTaskStatus(AssignmentNode** root, int workerId) {
     }
     
     printf("Current status: %s\n", assignment->assignment.status);
-    printf("Enter new status (pending, in-progress, completed): ");
-    fgets(status, 20, stdin);
-    status[strcspn(status, "\n")] = 0; 
     
-    if (strcmp(status, "pending") != 0 && 
-        strcmp(status, "in-progress") != 0 && 
-        strcmp(status, "completed") != 0) {
-        printf("Invalid status. Please use 'pending', 'in-progress', or 'completed'.\n");
-        return;
+    while (!validStatus) {
+        printf("Enter new status (pending, in-progress, completed): ");
+        fgets(status, 20, stdin);
+        status[strcspn(status, "\n")] = 0; 
+        
+        if (strcmp(status, "pending") == 0 || 
+            strcmp(status, "in-progress") == 0 || 
+            strcmp(status, "completed") == 0) {
+            validStatus = 1;
+        } else {
+            printf("Invalid status. Must be exactly 'pending', 'in-progress', or 'completed'.\n");
+        }
     }
     
     *root = updateAssignmentStatus(*root, assignmentId, status);

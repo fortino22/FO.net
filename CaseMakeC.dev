@@ -81,7 +81,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit4]
-FileName=task_managment.h
+FileName=task_management.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -91,7 +91,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit5]
-FileName=task_managment.cpp
+FileName=task_management.cpp
 CompileCpp=1
 Folder=
 Compile=1

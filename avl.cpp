@@ -4,7 +4,7 @@
 #include <time.h>
 #include "avl.h"
 
-generateRandomId() {
+int generateRandomId() {
     static int initialized = 0;
     if (!initialized) {
         srand(time(NULL));
@@ -98,10 +98,11 @@ AVLNode *searchById(AVLNode *root, int userId) {
     if (!root) return NULL;
     if (userId == root->user.userId)
         return root;
-    else if (userId < root->user.userId)
-        return searchById(root->left, userId);
-    else
-        return searchById(root->right, userId);
+    
+    AVLNode* found = searchById(root->left, userId);
+    if (found) return found;
+    
+    return searchById(root->right, userId);
 }
 
 int getAssignmentHeight(AssignmentNode *node) {
