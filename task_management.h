@@ -37,4 +37,11 @@ void inorderTraversalWorkers(AVLNode* root);
 
 void collectUserAssignments(AssignmentNode* root, int userId, AssignmentNode* assignments[], int* count);
 
-#endif 
+bool initializeGameEnvironment(int* validCount);
+void displayGameInterface(AssignmentNode** assignments, int assignmentCount);
+int handleNavigationMode(char* input);
+int handleUpdateMode(AssignmentNode** root, AssignmentNode** currentAssignments, int assignmentCount, char* input);
+int processAssignmentUpdate(AssignmentNode** root, AssignmentNode** currentAssignments, int assignmentCount, int assignmentId);
+void startAssignment(AssignmentNode** root, int workerId);
+void getValidStatus(char* status, int maxLength);
+#endif
