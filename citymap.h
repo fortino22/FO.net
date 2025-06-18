@@ -9,7 +9,7 @@
 #include <stdbool.h>
 
 #define CITY_WIDTH  80
-#define CITY_HEIGHT 24
+#define CITY_HEIGHT 30
 #define MAX_CHUNKS 25
 #define FRAME_DELAY 20000
 #define CHUNK_MARGIN 1
@@ -43,6 +43,5 @@ void initializePlayerPosition(void);
 void movePlayerInCity(char direction);
 int initializeCity(int numChunks);
 void citySandbox(void);
-void addBorderRoads(void);
-void addPerimeterRoads(void);
+void addSimplifiedCrossRoads(void);
 #endif

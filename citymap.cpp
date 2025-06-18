@@ -1,6 +1,9 @@
 #include "citymap.h"
 #include <float.h>
 #include <string.h>
+#include <cctype>
+#define PATH_CHAR '#'
+#define BUILDING_CHAR '#'
 
 Chunk chunks[MAX_CHUNKS];
 char cityMap[CITY_HEIGHT][CITY_WIDTH];
@@ -21,30 +24,30 @@ void printCityMap() {
     for (int y = 0; y < CITY_HEIGHT; y++) {
         for (int x = 0; x < CITY_WIDTH; x++) {
             if (showCityPlayer && x == cityPlayerX && y == cityPlayerY) {
-                printf("\033[31mP\033[0m");
-            } else {
-                switch (cityMap[y][x]) {
-                    case '#':
-                        printf("\033[36m#\033[0m"); // Buildings in cyan
-                        break;
-                    case '+':
-                        printf("\033[33m+\033[0m"); // Primary road in yellow like worldmap
-                        break;
-                    case '=':
-                        printf("\033[35m=\033[0m"); // Secondary road in magenta like worldmap
-                        break;
-                    case ' ':
-                        printf("\033[34m.\033[0m"); // Empty space as blue dots
-                        break;
-                    default:
-                        printf("%c", cityMap[y][x]);
+                printf("\033[31mP\033[0m");  // Player remains red
+            } else if (cityMap[y][x] == '#') {
+                bool isBuilding = false;
+                
+                int adjacentCount = 0;
+                if (y > 0 && cityMap[y-1][x] == '#') adjacentCount++;
+                if (y < CITY_HEIGHT-1 && cityMap[y+1][x] == '#') adjacentCount++;
+                if (x > 0 && cityMap[y][x-1] == '#') adjacentCount++;
+                if (x < CITY_WIDTH-1 && cityMap[y][x+1] == '#') adjacentCount++;
+                
+                if (adjacentCount >= 3) {
+                    printf("\033[36m#\033[0m");
+                } else {
+                    printf("\033[33m#\033[0m");
                 }
+            } else if (cityMap[y][x] == ' ') {
+                printf("\033[34m.\033[0m");  // Keep dots blue
+            } else {
+                printf("%c", cityMap[y][x]);
             }
         }
         putchar('\n');
     }
 }
-
 
 bool isChunkOverlapping(int x, int y, int width, int height) {
     if (x < 0 || y < 0 || x + width >= CITY_WIDTH || y + height >= CITY_HEIGHT) {
@@ -74,24 +77,131 @@ void fillChunk(int x, int y, int width, int height) {
     }
 }
 
+// Improve generateCityChunks with better validation
 void generateCityChunks(int count) {
+    // Initialize chunks array
     memset(chunks, 0, sizeof(chunks));
     
+    // Ensure minimum of 4 chunks
+    if (count < 4) count = 4;
+    if (count > MAX_CHUNKS) count = MAX_CHUNKS;
+    
+    // More varied city placement parameters
     int placementAttempts = 0;
     int maxAttempts = 500;
     
-    for (int i = 0; i < count && placementAttempts < maxAttempts; i++) {
+    // Create zones for better distribution
+    // Define 4 quadrants of the map for more even distribution
+    int quadrants[4][4] = {
+        {5, CITY_WIDTH/2 - 5, 5, CITY_HEIGHT/2 - 5},                  // Top-left
+        {CITY_WIDTH/2 + 5, CITY_WIDTH - 5, 5, CITY_HEIGHT/2 - 5},     // Top-right
+        {5, CITY_WIDTH/2 - 5, CITY_HEIGHT/2 + 5, CITY_HEIGHT - 5},    // Bottom-left
+        {CITY_WIDTH/2 + 5, CITY_WIDTH - 5, CITY_HEIGHT/2 + 5, CITY_HEIGHT - 5} // Bottom-right
+    };
+    
+    // Place at least one chunk in each quadrant for better distribution
+    for (int q = 0; q < 4 && q < count; q++) {
         int valid = 0;
         int attempts = 0;
         
         while (!valid && attempts < 50) {
-            int width = 3 + rand() % 6;
-            int height = 2 + rand() % 4;
+            // Create buildings with varied sizes
+            int width = 5 + rand() % 5;   // 5-9 blocks wide
+            int height = 4 + rand() % 3;  // 4-6 blocks high
             
-            int x = rand() % (CITY_WIDTH - width - 2) + 1;
-            int y = rand() % (CITY_HEIGHT - height - 2) + 1;
+            // Get quadrant boundaries
+            int minX = quadrants[q][0];
+            int maxX = quadrants[q][1] - width;
+            int minY = quadrants[q][2];
+            int maxY = quadrants[q][3] - height;
             
-            if (!isChunkOverlapping(x, y, width, height)) {
+            // Skip if invalid dimensions
+            if (maxX <= minX || maxY <= minY) {
+                attempts++;
+                continue;
+            }
+            
+            // Random position within this quadrant
+            int x = minX + rand() % (maxX - minX + 1);
+            int y = minY + rand() % (maxY - minY + 1);
+            
+            // Check if overlapping with existing chunks
+            bool overlapping = false;
+            int margin = 7;  // Ensure good spacing between buildings
+            
+            for (int j = y - margin; j < y + height + margin; j++) {
+                for (int i = x - margin; i < x + width + margin; i++) {
+                    if (i < 0 || j < 0 || i >= CITY_WIDTH || j >= CITY_HEIGHT) {
+                        continue;
+                    }
+                    
+                    if (cityMap[j][i] != ' ') {
+                        overlapping = true;
+                        break;
+                    }
+                }
+                if (overlapping) break;
+            }
+            
+            if (!overlapping) {
+                chunks[q].x = x + width/2;
+                chunks[q].y = y + height/2;
+                chunks[q].width = width;
+                chunks[q].height = height;
+                chunks[q].valid = 1;
+                
+                fillChunk(x, y, width, height);
+                
+                printCityMap();
+                usleep(FRAME_DELAY);
+                
+                valid = 1;
+            }
+            
+            attempts++;
+            placementAttempts++;
+        }
+        
+        if (!valid) {
+            printf("Could not place chunk in quadrant %d\n", q+1);
+        }
+    }
+    
+    // Place remaining chunks randomly across the map
+    for (int i = 4; i < count && placementAttempts < maxAttempts; i++) {
+        int valid = 0;
+        int attempts = 0;
+        
+        while (!valid && attempts < 50) {
+            int width = 5 + rand() % 5;   // 5-9 blocks wide
+            int height = 4 + rand() % 3;  // 4-6 blocks high
+            
+            // Safe margins from edge
+            int safeMargin = 5;
+            
+            // Random position with safer margins
+            int x = safeMargin + rand() % (CITY_WIDTH - 2*safeMargin - width);
+            int y = safeMargin + rand() % (CITY_HEIGHT - 2*safeMargin - height);
+            
+            // Check for overlaps
+            bool overlapping = false;
+            int margin = 7;  // Consistent spacing
+            
+            for (int j = y - margin; j < y + height + margin; j++) {
+                for (int i = x - margin; i < x + width + margin; i++) {
+                    if (i < 0 || j < 0 || i >= CITY_WIDTH || j >= CITY_HEIGHT) {
+                        continue;
+                    }
+                    
+                    if (cityMap[j][i] != ' ') {
+                        overlapping = true;
+                        break;
+                    }
+                }
+                if (overlapping) break;
+            }
+            
+            if (!overlapping) {
                 chunks[i].x = x + width/2;
                 chunks[i].y = y + height/2;
                 chunks[i].width = width;
@@ -100,8 +210,11 @@ void generateCityChunks(int count) {
                 
                 fillChunk(x, y, width, height);
                 
-                printCityMap();
-                usleep(FRAME_DELAY);
+                // Only update display occasionally
+                if (i % 2 == 0) {
+                    printCityMap();
+                    usleep(FRAME_DELAY);
+                }
                 
                 valid = 1;
             }
@@ -120,103 +233,81 @@ void generateCityChunks(int count) {
         if (chunks[i].valid) validCount++;
     }
     
+    // Final display update
+    printCityMap();
+    usleep(FRAME_DELAY);
+    
     printf("Successfully placed %d out of %d city chunks\n", validCount, count);
 }
-
-void drawRoad(int x1, int y1, int x2, int y2) {
-    int dx = abs(x2 - x1), dy = abs(y2 - y1);
-    int sx = x1 < x2 ? 1 : -1;
-    int sy = y1 < y2 ? 1 : -1;
-    int err = dx - dy;
-    int err2;
-    
-    double length = sqrt(dx*dx + dy*dy);
-    if (length < 0.0001) return;
-    
-    int cx1 = x1, cy1 = y1;
-    while (1) {
-        if (cx1 >= 0 && cx1 < CITY_WIDTH && cy1 >= 0 && cy1 < CITY_HEIGHT) {
-            if (cityMap[cy1][cx1] == ' ' || cityMap[cy1][cx1] == '+') {
-                cityMap[cy1][cx1] = '+';
-            }
-        }
-        
-        if (dx > 2 && dy > 2) {
-            if (cx1 != x2 && cy1 != y2) {
-                if (cx1+sx >= 0 && cx1+sx < CITY_WIDTH && cy1 >= 0 && cy1 < CITY_HEIGHT) {
-                    if (cityMap[cy1][cx1+sx] == ' ') cityMap[cy1][cx1+sx] = '+';
-                }
-                if (cx1 >= 0 && cx1 < CITY_WIDTH && cy1+sy >= 0 && cy1+sy < CITY_HEIGHT) {
-                    if (cityMap[cy1+sy][cx1] == ' ') cityMap[cy1+sy][cx1] = '+';
-                }
-            }
-        }
-        
-        if (cx1 == x2 && cy1 == y2) break;
-        
-        err2 = 2 * err;
-        if (err2 > -dy) { err -= dy; cx1 += sx; }
-        if (err2 < dx) { err += dx; cy1 += sy; }
+// Fix drawCleanRoad to handle edge cases better
+void drawCleanRoad(int x1, int y1, int x2, int y2) {
+    // Validate coordinates
+    if (x1 < 0 || x1 >= CITY_WIDTH || y1 < 0 || y1 >= CITY_HEIGHT ||
+        x2 < 0 || x2 >= CITY_WIDTH || y2 < 0 || y2 >= CITY_HEIGHT) {
+        return;  // Invalid coordinates, skip drawing
     }
     
-    if (length > 5) {
-        double nx = -sy / length;
-        double ny = sx / length;
-        int offset = 1;
-        
-        int cx2 = x1 + round(nx * offset);
-        int cy2 = y1 + round(ny * offset);
-        err = dx - dy;
-        
-        while (1) {
-            if (cx2 >= 0 && cx2 < CITY_WIDTH && cy2 >= 0 && cy2 < CITY_HEIGHT) {
-                if (cityMap[cy2][cx2] == ' ' || cityMap[cy2][cx2] == '=') {
-                    cityMap[cy2][cx2] = '=';
-                }
-            }
-            
-            if (dx > 2 && dy > 2) {
-                int nx2 = cx2 + round(nx * offset);
-                int ny2 = cy2 + round(ny * offset);
-                
-                if (nx2 >= 0 && nx2 < CITY_WIDTH && ny2 >= 0 && ny2 < CITY_HEIGHT) {
-                    if (cityMap[ny2][nx2] == ' ') cityMap[ny2][nx2] = '=';
-                }
-            }
-            
-            int destX = x2 + round(nx * offset);
-            int destY = y2 + round(ny * offset);
-            
-            if (cx2 == destX && cy2 == destY) break;
-            
-            err2 = 2 * err;
-            if (err2 > -dy) { err -= dy; cx2 += sx; }
-            if (err2 < dx) { err += dx; cy2 += sy; }
+    // Ensure source and destination are well within bounds
+    int safeMargin = 5;
+    x1 = (x1 < safeMargin) ? safeMargin : ((x1 >= CITY_WIDTH-safeMargin) ? CITY_WIDTH-safeMargin-1 : x1);
+    y1 = (y1 < safeMargin) ? safeMargin : ((y1 >= CITY_HEIGHT-safeMargin) ? CITY_HEIGHT-safeMargin-1 : y1);
+    x2 = (x2 < safeMargin) ? safeMargin : ((x2 >= CITY_WIDTH-safeMargin) ? CITY_WIDTH-safeMargin-1 : x2);
+    y2 = (y2 < safeMargin) ? safeMargin : ((y2 >= CITY_HEIGHT-safeMargin) ? CITY_HEIGHT-safeMargin-1 : y2);
+    
+    // Check if this is a zero-length road
+    if (x1 == x2 && y1 == y2) {
+        return;  // Skip drawing zero-length roads
+    }
+    
+    // Draw horizontal segment first
+    int startX = x1;
+    int endX = x2;
+    if (startX > endX) {
+        startX = x2;
+        endX = x1;
+    }
+    
+    for (int x = startX; x <= endX; x++) {
+        if (x >= 0 && x < CITY_WIDTH && y1 >= 0 && y1 < CITY_HEIGHT) {
+            cityMap[y1][x] = '#';
         }
     }
     
+    // Draw vertical segment
+    int startY = y1;
+    int endY = y2;
+    if (startY > endY) {
+        startY = y2;
+        endY = y1;
+    }
+    
+    for (int y = startY; y <= endY; y++) {
+        if (x2 >= 0 && x2 < CITY_WIDTH && y >= 0 && y < CITY_HEIGHT) {
+            cityMap[y][x2] = '#';
+        }
+    }
+    
+    // Only update the display occasionally to avoid slowdowns
     if (rand() % 3 == 0) {
         printCityMap();
-        usleep(FRAME_DELAY/3);
+        usleep(FRAME_DELAY/4);
     }
 }
-
-
-
-
+// Fix the primMST function to prevent division by zero errors
 void primMST(int numChunks) {
     int validCount = 0;
     int validIndices[MAX_CHUNKS];
     
+    // Collect valid chunks
     for (int i = 0; i < numChunks; i++) {
         if (chunks[i].valid) {
             validIndices[validCount++] = i;
         }
     }
     
-    if (validCount <= 1) return;
+    if (validCount <= 1) return;  // Need at least 2 chunks for roads
     
-    // Standard Prim's algorithm implementation
+    // Standard Prim's algorithm implementation with safety checks
     bool inMST[MAX_CHUNKS];
     double key[MAX_CHUNKS];
     int parent[MAX_CHUNKS];
@@ -243,12 +334,21 @@ void primMST(int numChunks) {
         inMST[minIndex] = true;
         
         for (int v = 0; v < validCount; v++) {
+            if (v == minIndex) continue;  // Skip self
+            
             int idx1 = validIndices[minIndex];
             int idx2 = validIndices[v];
+            
+            // Safety check - ensure both chunks are valid
+            if (!chunks[idx1].valid || !chunks[idx2].valid) continue;
+            
             double dist = sqrt(
                 pow(chunks[idx1].x - chunks[idx2].x, 2) +
                 pow(chunks[idx1].y - chunks[idx2].y, 2)
             );
+            
+            // Safety check - ensure distance is valid
+            if (dist < 0.0001) dist = 0.0001;  // Prevent zero distance
             
             if (!inMST[v] && dist < key[v]) {
                 parent[v] = minIndex;
@@ -262,78 +362,120 @@ void primMST(int numChunks) {
         int idx1 = validIndices[parent[i]];
         int idx2 = validIndices[i];
         
-        drawRoad(
+        // Safety check for valid chunks
+        if (!chunks[idx1].valid || !chunks[idx2].valid) continue;
+        
+        drawCleanRoad(
             chunks[idx1].x, chunks[idx1].y,
             chunks[idx2].x, chunks[idx2].y
         );
-        
-        printCityMap();
-        usleep(FRAME_DELAY);
     }
     
-    // Add additional roads for better connectivity (similar to worldmap's additional connections)
-    int extraRoads = validCount / 3;
-    for (int i = 0; i < extraRoads; i++) {
-        int src = validIndices[rand() % validCount];
-        int dest = validIndices[rand() % validCount];
-        
-        // Don't connect to itself and only make connections between chunks that aren't too close
-        if (src != dest) {
-            double dist = sqrt(
-                pow(chunks[src].x - chunks[dest].x, 2) +
-                pow(chunks[src].y - chunks[dest].y, 2)
-            );
+    // Add 1-2 strategic cross-connections for better connectivity
+    int extraRoads = 1 + (validCount > 4 ? 1 : 0);
+    
+    // Find pairs of unconnected chunks with largest distances
+    typedef struct {
+        int src, dest;
+        double dist;
+    } Connection;
+    
+    Connection connections[MAX_CHUNKS * MAX_CHUNKS];
+    int connCount = 0;
+    
+    for (int i = 0; i < validCount; i++) {
+        for (int j = i+1; j < validCount; j++) {
+            // Check if already directly connected in MST
+            bool connected = false;
+            for (int k = 1; k < validCount; k++) {
+                if ((parent[k] == i && k == j) || (parent[k] == j && k == i)) {
+                    connected = true;
+                    break;
+                }
+            }
             
-            // Only add extra roads if distance is meaningful
-            if (dist > 5) {
-                drawRoad(chunks[src].x, chunks[src].y, chunks[dest].x, chunks[dest].y);
+            if (!connected) {
+                int idx1 = validIndices[i];
+                int idx2 = validIndices[j];
+                
+                // Safety check for valid chunks
+                if (!chunks[idx1].valid || !chunks[idx2].valid) continue;
+                
+                double dist = sqrt(
+                    pow(chunks[idx1].x - chunks[idx2].x, 2) +
+                    pow(chunks[idx1].y - chunks[idx2].y, 2)
+                );
+                
+                // Safety check - ensure distance is valid
+                if (dist < 0.0001) continue;  // Skip extremely close chunks
+                
+                connections[connCount].src = idx1;
+                connections[connCount].dest = idx2;
+                connections[connCount].dist = dist;
+                connCount++;
             }
         }
     }
     
-    // Add cross-city roads but fewer than before
-    addBorderRoads();
+    // Safety check - ensure we have connections
+    if (connCount == 0) return;
+    
+    // Sort connections by distance (largest first)
+    for (int i = 0; i < connCount; i++) {
+        for (int j = i+1; j < connCount; j++) {
+            if (connections[j].dist > connections[i].dist) {
+                Connection temp = connections[i];
+                connections[i] = connections[j];
+                connections[j] = temp;
+            }
+        }
+    }
+    
+    // Add the extra roads between most distant unconnected chunks
+    for (int i = 0; i < extraRoads && i < connCount; i++) {
+        drawCleanRoad(
+            chunks[connections[i].src].x, chunks[connections[i].src].y,
+            chunks[connections[i].dest].x, chunks[connections[i].dest].y
+        );
+    }
 }
 
-void addBorderRoads() {
-    // Create fewer, more strategic cross-city roads
-    int hroads = 2 + rand() % 2; // 2-3 horizontal roads
-    int vroads = 2 + rand() % 2; // 2-3 vertical roads
+
+// Update the simplified cross roads function to match worldmap style
+void addSimplifiedCrossRoads() {
+    // Find the bounds of actual buildings
+    int minX = CITY_WIDTH, maxX = 0;
+    int minY = CITY_HEIGHT, maxY = 0;
     
-    // Add horizontal roads
-    for (int i = 0; i < hroads; i++) {
-        int y = (CITY_HEIGHT / (hroads+1)) * (i+1);
-        int lastRoadX = -1;
-        
-        for (int x = 0; x < CITY_WIDTH; x++) {
-            if (cityMap[y][x] == '+' || cityMap[y][x] == '#' || cityMap[y][x] == '=') {
-                if (lastRoadX != -1 && x - lastRoadX > 3) {
-                    drawRoad(lastRoadX, y, x, y);
-                }
-                lastRoadX = x;
-            }
+    for (int i = 0; i < MAX_CHUNKS; i++) {
+        if (chunks[i].valid) {
+            if (chunks[i].x - chunks[i].width/2 < minX) minX = chunks[i].x - chunks[i].width/2;
+            if (chunks[i].x + chunks[i].width/2 > maxX) maxX = chunks[i].x + chunks[i].width/2;
+            if (chunks[i].y - chunks[i].height/2 < minY) minY = chunks[i].y - chunks[i].height/2;
+            if (chunks[i].y + chunks[i].height/2 > maxY) maxY = chunks[i].y + chunks[i].height/2;
         }
     }
     
-    // Add vertical roads
-    for (int i = 0; i < vroads; i++) {
-        int x = (CITY_WIDTH / (vroads+1)) * (i+1);
-        int lastRoadY = -1;
-        
-        for (int y = 0; y < CITY_HEIGHT; y++) {
-            if (cityMap[y][x] == '+' || cityMap[y][x] == '#' || cityMap[y][x] == '=') {
-                if (lastRoadY != -1 && y - lastRoadY > 3) {
-                    drawRoad(x, lastRoadY, x, y);
-                }
-                lastRoadY = y;
-            }
-        }
-    }
+    // Adjust bounds to stay within safe limits
+    minX = minX < 3 ? 3 : minX;
+    maxX = maxX >= CITY_WIDTH-3 ? CITY_WIDTH-4 : maxX;
+    minY = minY < 3 ? 3 : minY;
+    maxY = maxY >= CITY_HEIGHT-3 ? CITY_HEIGHT-4 : maxY;
+    
+    // Add horizontal main road
+    int midY = (minY + maxY) / 2;
+    drawCleanRoad(minX, midY, maxX, midY);
+    
+    // Add vertical main road
+    int midX = (minX + maxX) / 2;
+    drawCleanRoad(midX, minY, midX, maxY);
 }
+
 void initializePlayerPosition() {
-    for (int y = 0; y < CITY_HEIGHT; y++) {
-        for (int x = 0; x < CITY_WIDTH; x++) {
-            if (cityMap[y][x] == '+') {
+    // Look for roads within the safe area first
+    for (int y = 5; y < CITY_HEIGHT - 5; y++) {
+        for (int x = 5; x < CITY_WIDTH - 5; x++) {
+            if (cityMap[y][x] == '#') {
                 cityPlayerX = x;
                 cityPlayerY = y;
                 return;
@@ -341,9 +483,12 @@ void initializePlayerPosition() {
         }
     }
     
+    // Fallback to center if no roads found in safe area
     cityPlayerX = CITY_WIDTH / 2;
     cityPlayerY = CITY_HEIGHT / 2;
 }
+
+// Update movePlayerInCity to recognize only # for roads
 void movePlayerInCity(char direction) {
     int newX = cityPlayerX;
     int newY = cityPlayerY;
@@ -355,47 +500,23 @@ void movePlayerInCity(char direction) {
         case 'd': newX++; break;
     }
     
-    // Check if new position is within bounds
     if (newX < 0 || newX >= CITY_WIDTH || newY < 0 || newY >= CITY_HEIGHT) {
         return;
     }
     
-    // Allow movement on all road types and buildings
-    if (cityMap[newY][newX] == '+' || cityMap[newY][newX] == '=' || cityMap[newY][newX] == '#') {
+    // Only allow movement on '#' tiles (buildings and paths now use the same character)
+    if (cityMap[newY][newX] == '#') {
         cityPlayerX = newX;
         cityPlayerY = newY;
         return;
-    }
-    
-    // If coming from a road, allow creating new road segments
-    if (cityMap[cityPlayerY][cityPlayerX] == '+' || cityMap[cityPlayerY][cityPlayerX] == '=') {
-        cityMap[newY][newX] = '+';  // Create new road segment
-        cityPlayerX = newX;
-        cityPlayerY = newY;
-        return;
-    }
-    
-    // Check for nearby road segments to connect to
-    for (int dy = -1; dy <= 1; dy++) {
-        for (int dx = -1; dx <= 1; dx++) {
-            if (dx == 0 && dy == 0) continue;
-            
-            int checkX = newX + dx;
-            int checkY = newY + dy;
-            
-            if (checkX >= 0 && checkX < CITY_WIDTH && checkY >= 0 && checkY < CITY_HEIGHT) {
-                if (cityMap[checkY][checkX] == '+' || cityMap[checkY][checkX] == '=') {
-                    cityMap[newY][newX] = '+';
-                    cityPlayerX = newX;
-                    cityPlayerY = newY;
-                    return;
-                }
-            }
-        }
     }
 }
 
+
 int initializeCity(int numChunks) {
+    // Generate 4-6 chunks, always at least 4
+    numChunks = 4 + (rand() % 3);
+    
     srand(time(NULL));
     printf("\033[2J");
     
@@ -421,23 +542,50 @@ void citySandbox() {
     char move;
     int running = 1;
     
+    // Clear any lingering input in the buffer
+    fflush(stdin);
+    
+    // Print initial instructions just once
     printf("\nWelcome to the city! Use WASD to move, 'q' to quit\n");
+    printf("Move direction (w/a/s/d, q to quit): ");
+    fflush(stdout);
     
     while (running) {
-        printf("Move direction (w/a/s/d, q to quit): ");
-        scanf(" %c", &move);
+        // Use getchar() for cleaner input handling
+        move = getchar();
         
-        if (move == 'q') {
+        // Skip newlines and spaces
+        if (move == '\n' || move == ' ') {
+            continue;
+        }
+        
+        if (move == 'q' || move == 'Q') {
             running = 0;
-        } else if (move == 'w' || move == 'a' || move == 's' || move == 'd') {
+        } else if (move == 'w' || move == 'a' || move == 's' || move == 'd' ||
+                  move == 'W' || move == 'A' || move == 'S' || move == 'D') {
+            // Convert to lowercase for consistency
+            move = tolower(move);
             movePlayerInCity(move);
+            
+            // Clear the screen before redrawing the map
+            printf("\033[H\033[J");
             printCityMap();
-
-            if (cityMap[cityPlayerY][cityPlayerX] == '#') {
-                printf("You are at a building.\n");
-            } else if (cityMap[cityPlayerY][cityPlayerX] == '+') {
-                printf("You are on a road.\n");
+            
+            // Count valid chunks for status message
+            int validCount = 0;
+            for (int i = 0; i < MAX_CHUNKS; i++) {
+                if (chunks[i].valid) validCount++;
             }
+            
+            printf("> "); 
+            fflush(stdout);
+        } else {
+            // Handle invalid input
+            printf("Invalid input. Use w/a/s/d to move, q to quit: ");
+            fflush(stdout);
+            
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF);
         }
     }
 }
