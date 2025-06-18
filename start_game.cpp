@@ -59,7 +59,7 @@ int handleNavigationMode(char* input) {
   } else if (*input == 27) {
       return 2;
   } else if (*input == 'w' || *input == 'a' || *input == 's' || *input == 'd') {
-      movePlayer(*input);
+      movePlayer(*input, 5);
   }
   return 1;
 }

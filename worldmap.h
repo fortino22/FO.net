@@ -20,6 +20,7 @@ typedef struct {
     int centerX, centerY;
     int baseRadius;  
     int valid;  
+    char *name;  
 } Country;
 
 typedef struct {
@@ -50,9 +51,9 @@ int compareEdges(const void *a, const void *b);
 void drawDoubleLine(int x1, int y1, int x2, int y2);
 void kruskalAndDrawDoubleLine(int n);
 void initializePlayerPosition(int numCountries);
-void movePlayer(char direction);
+void movePlayer(char direction, int numCountries);
 
 int initializeWorld(int numCountries);
-void startGameLoop(void);
+void startGameLoop(int numCountries);
 
 #endif

@@ -1,5 +1,6 @@
 #include "worldmap.h"
-
+#include <conio.h>
+#include "citymap.h"
 Country countries[MAX_COUNTRIES];
 Edge edges[MAX_COUNTRIES * MAX_COUNTRIES];
 int parent[MAX_COUNTRIES];
@@ -70,6 +71,18 @@ void fillPolygon(int vertices[][2], int n, char ch) {
         }
     }
 }
+
+int getPlayerCountry(int numCountries) {
+    for (int i = 0; i < numCountries; i++) {
+        if (!countries[i].valid) continue;
+        
+        if (isInside(playerX, playerY, countries[i].vertices, countries[i].numVertices)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 
 int isOverlapping(int vertices[][2], int n) {
     int minX = WIDTH, maxX = 0, minY = HEIGHT, maxY = 0;
@@ -414,8 +427,10 @@ void initializePlayerPosition(int numCountries) {
     }
 }
 
-void movePlayer(char direction) {
+void movePlayer(char direction, int numCountries) {
+    int prevX = playerX, prevY = playerY;
     int newX = playerX, newY = playerY;
+    
     if (direction == 'w') newY--;
     if (direction == 's') newY++;
     if (direction == 'a') newX--;
@@ -425,8 +440,45 @@ void movePlayer(char direction) {
         (map[newY][newX] == '#' || map[newY][newX] == '+' || map[newY][newX] == '=')) {
         playerX = newX;
         playerY = newY;
+        
+        int countryId = getPlayerCountry(numCountries);
+        if (countryId >= 0) {
+            int prevCountry = -1;
+            if (prevX != newX || prevY != newY) {
+                prevCountry = -1;
+                for (int i = 0; i < numCountries; i++) {
+                    if (!countries[i].valid) continue;
+                    if (isInside(prevX, prevY, countries[i].vertices, countries[i].numVertices)) {
+                        prevCountry = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (prevCountry != countryId) {
+                printf("\nEntering %s country...\n", countries[countryId].name ? countries[countryId].name : "unnamed");
+                printf("Press any key to explore the city...");
+                _getch();
+                
+                system("cls");
+                printf("\033[H\033[J");
+                
+                printf("Generating city for country #%d...\n", countryId + 1);
+                
+                int numChunks = 10 + (countries[countryId].baseRadius / 2);
+                int validCityChunks = initializeCity(numChunks);
+                
+                citySandbox();
+                
+                system("cls");
+                printf("\033[H\033[J");
+                printf("Returning to world map...\n");
+                printMap();
+            }
+        }
     }
 }
+
 
 int initializeWorld(int numCountries) {
     srand(time(NULL));
@@ -449,18 +501,22 @@ int initializeWorld(int numCountries) {
     return validCount;
 }
 
-void startGameLoop() {
+void startGameLoop(int numCountries) {
     char move;
     int running = 1;
-
+    
+    printf("\nExplore the world! Use WASD to move, enter countries to view cities\n");
+    printf("Press Q to quit exploration\n\n");
+    
     while (running) {
         printf("Move player (w/a/s/d, q to quit): ");
-        scanf(" %c", &move);
-
-        if (move == 'q') {
+        move = _getch(); 
+        printf("%c\n", move);
+        
+        if (move == 'q' || move == 'Q') {
             running = 0;
         } else {
-            movePlayer(move);
+            movePlayer(move, numCountries);
             printMap();
         }
     }
