@@ -8,11 +8,11 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-#define CITY_WIDTH  80
+#define CITY_WIDTH  70
 #define CITY_HEIGHT 30
 #define MAX_CHUNKS 25
 #define FRAME_DELAY 20000
-#define CHUNK_MARGIN 1
+#define CHUNK_MARGIN 5
 
 typedef struct {
     int x, y;         

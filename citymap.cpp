@@ -226,7 +226,7 @@ void generateCityChunks(int count) {
     printCityMap();
     usleep(FRAME_DELAY);
 
-    printf("Successfully placed %d out of %d city chunks\n", validCount, count);
+    // printf("Successfully placed %d out of %d city chunks\n", validCount, count);
 }
 // Fix drawCleanRoad to handle edge cases better
 void drawCleanRoad(int x1, int y1, int x2, int y2) {

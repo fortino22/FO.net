@@ -463,7 +463,7 @@ void movePlayer(char direction, int numCountries) {
                 system("cls");
                 printf("\033[H\033[J");
                 
-                printf("Generating city for country #%d...\n", countryId + 1);
+                // printf("Generating city for country #%d...\n", countryId + 1);
                 
                 int numChunks = 10 + (countries[countryId].baseRadius / 2);
                 int validCityChunks = initializeCity(numChunks);

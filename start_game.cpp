@@ -126,6 +126,7 @@ int processAssignmentUpdate(AssignmentNode** root, AssignmentNode** currentAssig
 }
 
 void startAssignment(AssignmentNode** root, int workerId) {
+    system("cls");
   int validCount;
   
   if (!initializeGameEnvironment(&validCount)) {
