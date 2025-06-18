@@ -77,64 +77,60 @@ void fillChunk(int x, int y, int width, int height) {
     }
 }
 
-// Improve generateCityChunks with better validation
 void generateCityChunks(int count) {
-    // Initialize chunks array
     memset(chunks, 0, sizeof(chunks));
-    
+
     // Ensure minimum of 4 chunks
     if (count < 4) count = 4;
     if (count > MAX_CHUNKS) count = MAX_CHUNKS;
-    
-    // More varied city placement parameters
+
+    // Fixed chunk size: 4x7
+    const int FIXED_WIDTH = 4;
+    const int FIXED_HEIGHT = 7;
+
     int placementAttempts = 0;
     int maxAttempts = 500;
-    
-    // Create zones for better distribution
-    // Define 4 quadrants of the map for more even distribution
+
+    // Reduce quadrant spread to make chunks closer together
+    int xPad = CITY_WIDTH / 8;
+    int yPad = CITY_HEIGHT / 8;
     int quadrants[4][4] = {
-        {5, CITY_WIDTH/2 - 5, 5, CITY_HEIGHT/2 - 5},                  // Top-left
-        {CITY_WIDTH/2 + 5, CITY_WIDTH - 5, 5, CITY_HEIGHT/2 - 5},     // Top-right
-        {5, CITY_WIDTH/2 - 5, CITY_HEIGHT/2 + 5, CITY_HEIGHT - 5},    // Bottom-left
-        {CITY_WIDTH/2 + 5, CITY_WIDTH - 5, CITY_HEIGHT/2 + 5, CITY_HEIGHT - 5} // Bottom-right
+        {xPad, CITY_WIDTH/2 - xPad, yPad, CITY_HEIGHT/2 - yPad},
+        {CITY_WIDTH/2 + xPad, CITY_WIDTH - xPad, yPad, CITY_HEIGHT/2 - yPad},
+        {xPad, CITY_WIDTH/2 - xPad, CITY_HEIGHT/2 + yPad, CITY_HEIGHT - yPad},
+        {CITY_WIDTH/2 + xPad, CITY_WIDTH - xPad, CITY_HEIGHT/2 + yPad, CITY_HEIGHT - yPad}
     };
-    
+
     // Place at least one chunk in each quadrant for better distribution
     for (int q = 0; q < 4 && q < count; q++) {
         int valid = 0;
         int attempts = 0;
-        
+
         while (!valid && attempts < 50) {
-            // Create buildings with varied sizes
-            int width = 5 + rand() % 5;   // 5-9 blocks wide
-            int height = 4 + rand() % 3;  // 4-6 blocks high
-            
-            // Get quadrant boundaries
+            int width = FIXED_WIDTH;
+            int height = FIXED_HEIGHT;
+
             int minX = quadrants[q][0];
             int maxX = quadrants[q][1] - width;
             int minY = quadrants[q][2];
             int maxY = quadrants[q][3] - height;
-            
-            // Skip if invalid dimensions
+
             if (maxX <= minX || maxY <= minY) {
                 attempts++;
                 continue;
             }
-            
-            // Random position within this quadrant
+
             int x = minX + rand() % (maxX - minX + 1);
             int y = minY + rand() % (maxY - minY + 1);
-            
-            // Check if overlapping with existing chunks
+
             bool overlapping = false;
-            int margin = 7;  // Ensure good spacing between buildings
-            
+            int margin = 3; // Reduced margin for closer placement
+
             for (int j = y - margin; j < y + height + margin; j++) {
                 for (int i = x - margin; i < x + width + margin; i++) {
                     if (i < 0 || j < 0 || i >= CITY_WIDTH || j >= CITY_HEIGHT) {
                         continue;
                     }
-                    
                     if (cityMap[j][i] != ' ') {
                         overlapping = true;
                         break;
@@ -142,101 +138,94 @@ void generateCityChunks(int count) {
                 }
                 if (overlapping) break;
             }
-            
+
             if (!overlapping) {
                 chunks[q].x = x + width/2;
                 chunks[q].y = y + height/2;
                 chunks[q].width = width;
                 chunks[q].height = height;
                 chunks[q].valid = 1;
-                
+
                 fillChunk(x, y, width, height);
-                
+
                 printCityMap();
                 usleep(FRAME_DELAY);
-                
+
                 valid = 1;
             }
-            
+
             attempts++;
             placementAttempts++;
         }
-        
+
         if (!valid) {
             printf("Could not place chunk in quadrant %d\n", q+1);
         }
     }
-    
+
     // Place remaining chunks randomly across the map
     for (int i = 4; i < count && placementAttempts < maxAttempts; i++) {
         int valid = 0;
         int attempts = 0;
-        
+
         while (!valid && attempts < 50) {
-            int width = 5 + rand() % 5;   // 5-9 blocks wide
-            int height = 4 + rand() % 3;  // 4-6 blocks high
-            
-            // Safe margins from edge
+            int width = FIXED_WIDTH;
+            int height = FIXED_HEIGHT;
+
             int safeMargin = 5;
-            
-            // Random position with safer margins
             int x = safeMargin + rand() % (CITY_WIDTH - 2*safeMargin - width);
             int y = safeMargin + rand() % (CITY_HEIGHT - 2*safeMargin - height);
-            
-            // Check for overlaps
+
             bool overlapping = false;
-            int margin = 7;  // Consistent spacing
-            
+            int margin = 3; // Reduced margin for closer placement
+
             for (int j = y - margin; j < y + height + margin; j++) {
-                for (int i = x - margin; i < x + width + margin; i++) {
-                    if (i < 0 || j < 0 || i >= CITY_WIDTH || j >= CITY_HEIGHT) {
+                for (int k = x - margin; k < x + width + margin; k++) {
+                    if (k < 0 || j < 0 || k >= CITY_WIDTH || j >= CITY_HEIGHT) {
                         continue;
                     }
-                    
-                    if (cityMap[j][i] != ' ') {
+                    if (cityMap[j][k] != ' ') {
                         overlapping = true;
                         break;
                     }
                 }
                 if (overlapping) break;
             }
-            
+
             if (!overlapping) {
                 chunks[i].x = x + width/2;
                 chunks[i].y = y + height/2;
                 chunks[i].width = width;
                 chunks[i].height = height;
                 chunks[i].valid = 1;
-                
+
                 fillChunk(x, y, width, height);
-                
-                // Only update display occasionally
+
                 if (i % 2 == 0) {
                     printCityMap();
                     usleep(FRAME_DELAY);
                 }
-                
+
                 valid = 1;
             }
-            
+
             attempts++;
             placementAttempts++;
         }
-        
+
         if (!valid) {
             printf("Could not place chunk %d\n", i);
         }
     }
-    
+
     int validCount = 0;
     for (int i = 0; i < count; i++) {
         if (chunks[i].valid) validCount++;
     }
-    
-    // Final display update
+
     printCityMap();
     usleep(FRAME_DELAY);
-    
+
     printf("Successfully placed %d out of %d city chunks\n", validCount, count);
 }
 // Fix drawCleanRoad to handle edge cases better
