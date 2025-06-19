@@ -31,5 +31,6 @@ void saveHousesToFile(const char* filename);
 void loadHousesFromFile(const char* filename);
 void housePlacementLoopForChunk(Chunk* cityChunk);
 HouseNode* copyHouseTree(HouseNode* root);
+HouseNode* copyChunkData(Chunk* srcChunk, Chunk* destChunk);
 void freeHouseTree(HouseNode* root);
 #endif

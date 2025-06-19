@@ -19,6 +19,7 @@ struct Assignment {
     char description[500];
     char status[20]; 
 };
+d
 
 struct AVLNode {
     User user;

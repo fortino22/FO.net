@@ -219,6 +219,21 @@ void drawLineWithAnimation(int x1, int y1, int x2, int y2, char grid[GRID_ROWS][
 }
 
 void animateKruskal(HouseNode* root) {
+    // Find the chunk this house tree belongs to
+    Chunk* chunk = NULL;
+    for (int i = 0; i < MAX_CHUNKS; i++) {
+        if (chunks[i].houseRoot == root && chunks[i].valid) {
+            chunk = &chunks[i];
+            break;
+        }
+    }
+    
+    if (!chunk) {
+        printf("Error: Could not find chunk for this house grid.\n");
+        _getch();
+        return;
+    }
+
     HousePos houses[GRID_ROWS * GRID_COLS];
     int n = 0;
     collectHouses(root, houses, &n);
@@ -237,7 +252,7 @@ void animateKruskal(HouseNode* root) {
             double dy = houses[i].y - houses[j].y;
             edges[edgeCount++] = (HouseEdge){i, j, sqrt(dx*dx + dy*dy)};
         }
-        
+    
     // Sort edges by weight (distance)
     for (int i = 0; i < edgeCount - 1; ++i)
         for (int j = i + 1; j < edgeCount; ++j)
@@ -254,14 +269,22 @@ void animateKruskal(HouseNode* root) {
     for (int i = 0; i < n; ++i)
         grid[houses[i].y][houses[i].x] = 'H';
 
+    // Clear previous connections
+    chunk->connectionCount = 0;
+
     // Show initial grid with just houses
     system("cls");
     printf("Starting to connect houses (Kruskal MST)...\n\n");
     for (int y = 0; y < GRID_ROWS; ++y) {
-        // ...existing code...
+        for (int x = 0; x < GRID_COLS; ++x) {
+            if (grid[y][x] == 'H')
+                printf(COLOR_HOUSE "H" COLOR_RESET " ");
+            else
+                printf(". ");
+        }
+        printf("\n");
     }
-    // Longer initial pause (from 500ms to 1000ms)
-    usleep(1000000); 
+    usleep(1000000); // 1s pause
 
     // Run Kruskal's algorithm with animated connections
     int added = 0;
@@ -274,37 +297,61 @@ void animateKruskal(HouseNode* root) {
             printf("\nConnecting %s to %s...", 
                    houses[u].node->house.name, 
                    houses[v].node->house.name);
-            // Longer pause before connection (from 300ms to 800ms)
             usleep(800000);
+            
+            if (chunk->connectionCount < MAX_CONNECTIONS) {
+                chunk->connections[chunk->connectionCount].startX = houses[u].x;
+                chunk->connections[chunk->connectionCount].startY = houses[u].y;
+                chunk->connections[chunk->connectionCount].endX = houses[v].x;
+                chunk->connections[chunk->connectionCount].endY = houses[v].y;
+                chunk->connections[chunk->connectionCount].active = 1;
+                chunk->connections[chunk->connectionCount].chunkX = chunk->x; // Add chunk identifier
+                chunk->connections[chunk->connectionCount].chunkY = chunk->y; // Add chunk identifier
+                chunk->connectionCount++;
+            }
             
             // Animate the connection between houses
             drawLineWithAnimation(houses[u].x, houses[u].y, 
                                  houses[v].x, houses[v].y, grid);
             
-            // Add a pause after each connection is complete
             usleep(500000);
-            
             added++;
         }
     }
     
     printf("\nConnection complete! All houses are connected.\n");
+    printf("The connections will remain visible until disconnected.\n");
     printf("Press any key to continue...\n");
     _getch();
 }
 
 void disconnectHouses(HouseNode* root) {
+    // Find the chunk this house tree belongs to
+    Chunk* chunk = NULL;
+    for (int i = 0; i < MAX_CHUNKS; i++) {
+        if (chunks[i].houseRoot == root && chunks[i].valid) {
+            chunk = &chunks[i];
+            break;
+        }
+    }
+    
+    if (!chunk) {
+        printf("Error: Could not find chunk for this house grid.\n");
+        _getch();
+        return;
+    }
+
     HousePos houses[GRID_ROWS * GRID_COLS];
     int n = 0;
     collectHouses(root, houses, &n);
     
-    if (n < 2) {
+    if (n < 2 || chunk->connectionCount == 0) {
         printf("No connections to remove.\n");
         _getch();
         return;
     }
 
-    // First show the connected grid
+    // Create grid for animation
     char grid[GRID_ROWS][GRID_COLS];
     memset(grid, '.', sizeof(grid));
     
@@ -312,56 +359,15 @@ void disconnectHouses(HouseNode* root) {
     for (int i = 0; i < n; ++i)
         grid[houses[i].y][houses[i].x] = 'H';
     
-    // Build minimal spanning tree
-    int parent[n];
-    for (int i = 0; i < n; ++i) parent[i] = i;
-    
-    int edgeCount = 0;
-    HouseEdge edges[n * (n - 1) / 2];
-    for (int i = 0; i < n; ++i)
-        for (int j = i + 1; j < n; ++j) {
-            double dx = houses[i].x - houses[j].x;
-            double dy = houses[i].y - houses[j].y;
-            edges[edgeCount++] = (HouseEdge){i, j, sqrt(dx*dx + dy*dy)};
-        }
-    
-    // Sort edges by weight for Kruskal's algorithm
-    for (int i = 0; i < edgeCount - 1; ++i)
-        for (int j = i + 1; j < edgeCount; ++j)
-            if (edges[i].weight > edges[j].weight) {
-                HouseEdge tmp = edges[i]; edges[i] = edges[j]; edges[j] = tmp;
-            }
-    
-    // Create connections and save all line paths for later traceback
-    typedef struct {
-        int x, y;
-    } Point;
-    
-    typedef struct {
-        Point* points;
-        int numPoints;
-        char* houseName1;
-        char* houseName2;
-    } LinePath;
-    
-    LinePath paths[n-1];  // MST has n-1 edges
-    int pathCount = 0;
-    
-    // Create connections for display
-    int added = 0;
-    for (int i = 0; i < edgeCount && added < n - 1; ++i) {
-        int u = edges[i].u, v = edges[i].v;
-        if (findSet(parent, u) != findSet(parent, v)) {
-            unionSet(parent, u, v);
+    // Draw all connections
+    for (int i = 0; i < chunk->connectionCount; i++) {
+        if (chunk->connections[i].active) {
+            int x1 = chunk->connections[i].startX;
+            int y1 = chunk->connections[i].startY;
+            int x2 = chunk->connections[i].endX;
+            int y2 = chunk->connections[i].endY;
             
-            // Draw line on grid and save the path
-            int x1 = houses[u].x, y1 = houses[u].y;
-            int x2 = houses[v].x, y2 = houses[v].y;
-            
-            // Allocate temporary points array
-            Point tempPoints[GRID_ROWS * GRID_COLS];
-            int tempPointCount = 0;
-            
+            // Draw line on grid
             int dx = abs(x2 - x1), dy = abs(y2 - y1);
             int sx = (x1 < x2) ? 1 : -1;
             int sy = (y1 < y2) ? 1 : -1;
@@ -373,26 +379,9 @@ void disconnectHouses(HouseNode* root) {
                 if (e2 > -dy) { err -= dy; cx += sx; }
                 if (e2 < dx) { err += dx; cy += sy; }
                 
-                if (cx >= 0 && cx < GRID_COLS && cy >= 0 && cy < GRID_ROWS && grid[cy][cx] != 'H') {
+                if (cx >= 0 && cx < GRID_COLS && cy >= 0 && cy < GRID_ROWS && grid[cy][cx] != 'H')
                     grid[cy][cx] = '*';
-                    // Save this point in the path
-                    tempPoints[tempPointCount].x = cx;
-                    tempPoints[tempPointCount].y = cy;
-                    tempPointCount++;
-                }
             }
-            
-            // Allocate and save the final path
-            paths[pathCount].points = (Point*)malloc(tempPointCount * sizeof(Point));
-            paths[pathCount].numPoints = tempPointCount;
-            paths[pathCount].houseName1 = houses[u].node->house.name;
-            paths[pathCount].houseName2 = houses[v].node->house.name;
-            
-            for (int j = 0; j < tempPointCount; j++) {
-                paths[pathCount].points[j] = tempPoints[j];
-            }
-            pathCount++;
-            added++;
         }
     }
     
@@ -410,18 +399,61 @@ void disconnectHouses(HouseNode* root) {
         }
         printf("\n");
     }
-    usleep(1000000);  // 1 second pause
+    usleep(1000000);
     
-    // Traceback disconnection - disconnect one line at a time
-    for (int p = pathCount - 1; p >= 0; p--) {
-        printf("\nDisconnecting line between %s and %s...\n", 
-               paths[p].houseName1, paths[p].houseName2);
-        usleep(800000);  // 0.8 second pause
+    // Now animate and remove each connection
+    typedef struct {
+        int x, y;
+    } Point;
+    
+    // For each connection, trace back
+    for (int c = chunk->connectionCount - 1; c >= 0; c--) {
+        if (!chunk->connections[c].active) continue;
         
-        // Trace back the line point by point
-        for (int i = paths[p].numPoints - 1; i >= 0; i--) {
-            int x = paths[p].points[i].x;
-            int y = paths[p].points[i].y;
+        int x1 = chunk->connections[c].startX;
+        int y1 = chunk->connections[c].startY;
+        int x2 = chunk->connections[c].endX;
+        int y2 = chunk->connections[c].endY;
+        
+        // Find house names (if possible)
+        char *houseName1 = "Unknown";
+        char *houseName2 = "Unknown";
+        for (int i = 0; i < n; i++) {
+            if (houses[i].x == x1 && houses[i].y == y1)
+                houseName1 = houses[i].node->house.name;
+            if (houses[i].x == x2 && houses[i].y == y2)
+                houseName2 = houses[i].node->house.name;
+        }
+        
+        printf("\nDisconnecting line between %s and %s...\n", houseName1, houseName2);
+        usleep(800000);
+        
+        // Calculate path points for traceback
+        Point points[GRID_ROWS * GRID_COLS];
+        int pointCount = 0;
+        
+        int dx = abs(x2 - x1), dy = abs(y2 - y1);
+        int sx = (x1 < x2) ? 1 : -1;
+        int sy = (y1 < y2) ? 1 : -1;
+        int err = dx - dy;
+        int cx = x1, cy = y1;
+        
+        while (!(cx == x2 && cy == y2)) {
+            int e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; cx += sx; }
+            if (e2 < dx) { err += dx; cy += sy; }
+            
+            if (cx >= 0 && cx < GRID_COLS && cy >= 0 && cy < GRID_ROWS && grid[cy][cx] == '*') {
+                points[pointCount].x = cx;
+                points[pointCount].y = cy;
+                pointCount++;
+            }
+        }
+        
+        // Trace back animation
+        for (int i = pointCount - 1; i >= 0; i--) {
+            int x = points[i].x;
+            int y = points[i].y;
             
             // Clear this point
             grid[y][x] = '.';
@@ -429,8 +461,8 @@ void disconnectHouses(HouseNode* root) {
             // Show the grid with this point removed
             system("cls");
             printf("Tracing back connection from %s to %s... (%d%%)\n\n", 
-                   paths[p].houseName1, paths[p].houseName2,
-                   (int)(100 * (paths[p].numPoints - i) / (float)paths[p].numPoints));
+                   houseName1, houseName2,
+                   (int)(100 * (pointCount - i) / (float)pointCount));
             
             for (int y = 0; y < GRID_ROWS; ++y) {
                 for (int x = 0; x < GRID_COLS; ++x) {
@@ -443,14 +475,17 @@ void disconnectHouses(HouseNode* root) {
                 }
                 printf("\n");
             }
-            usleep(150000);  // 0.15 second pause between points
+            usleep(150000);
         }
         
-        // Free the path points
-        free(paths[p].points);
+        // Deactivate this connection in persistent storage
+        chunk->connections[c].active = 0;
     }
     
-    usleep(500000);  // 0.5 second final pause
+    // Clear all connections
+    chunk->connectionCount = 0;
+    
+    usleep(500000);
     printf("\nDisconnection traceback complete!\n");
     printf("Press any key to continue...\n");
     _getch();
@@ -458,20 +493,100 @@ void disconnectHouses(HouseNode* root) {
 
 void drawGrid(int cursorX, int cursorY, HouseNode* root, int gridW, int gridH) {
     system("cls"); 
-    printf("Use WASD to move, ENTER to place/show, Q to quit, L to list all houses.\n\n");
+    printf("Use WASD to move, ENTER to place/show, Q to quit, L to list all houses.\n");
+    printf("C to connect houses, X to disconnect.\n\n");
+    
+    // Create a temporary grid to show houses and connections
+    char displayGrid[GRID_ROWS][GRID_COLS];
+    memset(displayGrid, '.', sizeof(displayGrid));
+    
+    // Collect all houses for later validation
+    HousePos houses[GRID_ROWS * GRID_COLS];
+    int houseCount = 0;
+    if (root) {
+        collectHouses(root, houses, &houseCount);
+        
+        // Mark houses on the grid
+        for (int i = 0; i < houseCount; i++) {
+            if (houses[i].x >= 0 && houses[i].x < gridW && 
+                houses[i].y >= 0 && houses[i].y < gridH) {
+                displayGrid[houses[i].y][houses[i].x] = 'H';
+            }
+        }
+    }
+    
+    // Draw connections if we're in a chunk
+    Chunk* chunk = NULL;
+    // Look through global chunks array to find which chunk contains this root
+    for (int i = 0; i < MAX_CHUNKS; i++) {
+        if (chunks[i].houseRoot == root) {
+            chunk = &chunks[i];
+            break;
+        }
+    }
+    
+    if (chunk) {
+        // Draw all active connections - but only if both endpoints have houses
+        for (int i = 0; i < chunk->connectionCount; i++) {
+            if (chunk->connections[i].active && 
+                chunk->connections[i].chunkX == chunk->x && 
+                chunk->connections[i].chunkY == chunk->y) {
+                
+                int x1 = chunk->connections[i].startX;
+                int y1 = chunk->connections[i].startY;
+                int x2 = chunk->connections[i].endX;
+                int y2 = chunk->connections[i].endY;
+                
+                // Check if both endpoints have houses
+                bool startHasHouse = false;
+                bool endHasHouse = false;
+                
+                for (int j = 0; j < houseCount; j++) {
+                    if (houses[j].x == x1 && houses[j].y == y1) {
+                        startHasHouse = true;
+                    }
+                    if (houses[j].x == x2 && houses[j].y == y2) {
+                        endHasHouse = true;
+                    }
+                }
+                
+                if (startHasHouse && endHasHouse) {
+                    int dx = abs(x2 - x1), dy = abs(y2 - y1);
+                    int sx = (x1 < x2) ? 1 : -1;
+                    int sy = (y1 < y2) ? 1 : -1;
+                    int err = dx - dy;
+                    int cx = x1, cy = y1;
+                    
+                    while (!(cx == x2 && cy == y2)) {
+                        int e2 = 2 * err;
+                        if (e2 > -dy) { err -= dy; cx += sx; }
+                        if (e2 < dx) { err += dx; cy += sy; }
+                        
+                        if (cx >= 0 && cx < gridW && cy >= 0 && cy < gridH && displayGrid[cy][cx] != 'H') {
+                            displayGrid[cy][cx] = '*';
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     for (int y = 0; y < gridH; ++y) {
         for (int x = 0; x < gridW; ++x) {
             if (x == cursorX && y == cursorY)
                 printf(COLOR_CURSOR "[");
             else
                 printf(" ");
-            HouseNode* node = searchHouse(root, x, y);
-            if (node)
+                
+            if (displayGrid[y][x] == 'H')
                 printf(COLOR_HOUSE "H" COLOR_RESET);
+            else if (displayGrid[y][x] == '*') 
+                printf(COLOR_CURSOR "*" COLOR_RESET);
             else if (x == cursorX && y == cursorY)
                 printf(COLOR_CURSOR "X" COLOR_RESET);
             else
                 printf(COLOR_EMPTY "." COLOR_RESET);
+                
             if (x == cursorX && y == cursorY)
                 printf(COLOR_CURSOR "]" COLOR_RESET);
             else
@@ -481,6 +596,22 @@ void drawGrid(int cursorX, int cursorY, HouseNode* root, int gridW, int gridH) {
     }
 }
 
+
+HouseNode* copyChunkData(Chunk* srcChunk, Chunk* destChunk) {
+    destChunk->connectionCount = srcChunk->connectionCount;
+    
+    for (int i = 0; i < MAX_CONNECTIONS; i++) {
+        if (i < srcChunk->connectionCount) {
+            destChunk->connections[i] = srcChunk->connections[i];
+            destChunk->connections[i].chunkX = srcChunk->x;
+            destChunk->connections[i].chunkY = srcChunk->y;
+        } else {
+            destChunk->connections[i].active = 0;
+        }
+    }
+    
+    return copyHouseTree(srcChunk->houseRoot);
+}
 void saveHouseInorder(HouseNode* root, FILE* file) {
     if (root) {
         saveHouseInorder(root->left, file);

@@ -16,7 +16,14 @@
 #define MAX_CHUNKS 25
 #define FRAME_DELAY 20000
 #define CHUNK_MARGIN 5
+#define MAX_CONNECTIONS 100
 
+typedef struct {
+    int startX, startY;
+    int endX, endY;
+    int active;
+    int chunkX, chunkY; 
+} Connection;
 
 
 typedef struct Chunk {
@@ -24,7 +31,9 @@ typedef struct Chunk {
     int width;        
     int height;     
     int valid;  
-    HouseNode* houseRoot;    
+    HouseNode* houseRoot;  
+    Connection connections[MAX_CONNECTIONS];  
+    int connectionCount;  
 } Chunk;
 
 typedef struct {

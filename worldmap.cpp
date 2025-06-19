@@ -259,8 +259,12 @@ int generateCountries(int desiredCount) {
             countries[count].lastCityPlayerY = -1;
             for (int j = 0; j < MAX_CHUNKS; j++) {
                 countries[count].savedChunks[j].houseRoot = NULL;
+                countries[count].savedChunks[j].connectionCount = 0; 
+                
+                for (int k = 0; k < MAX_CONNECTIONS; k++) {
+                    countries[count].savedChunks[j].connections[k].active = 0;
+                }
             }
-
             fillPolygon(vertices, numVertices, '#');
 
             if (count % 2 == 0) {
@@ -477,7 +481,8 @@ void movePlayer(char direction, int numCountries) {
                     countries[prevCountry].savedChunks[i].width = chunks[i].width;
                     countries[prevCountry].savedChunks[i].height = chunks[i].height;
                     countries[prevCountry].savedChunks[i].valid = chunks[i].valid;
-                    countries[prevCountry].savedChunks[i].houseRoot = copyHouseTree(chunks[i].houseRoot);
+                    countries[prevCountry].savedChunks[i].houseRoot = copyChunkData(&chunks[i], &countries[prevCountry].savedChunks[i]);
+
                 }
                 countries[prevCountry].lastCityPlayerX = cityPlayerX;
                 countries[prevCountry].lastCityPlayerY = cityPlayerY;
@@ -505,7 +510,7 @@ void movePlayer(char direction, int numCountries) {
                         countries[countryId].savedChunks[i].width = chunks[i].width;
                         countries[countryId].savedChunks[i].height = chunks[i].height;
                         countries[countryId].savedChunks[i].valid = chunks[i].valid;
-                        countries[countryId].savedChunks[i].houseRoot = copyHouseTree(chunks[i].houseRoot);
+                        countries[countryId].savedChunks[i].houseRoot = copyChunkData(&chunks[i], &countries[countryId].savedChunks[i]);
                     }
                     countries[countryId].lastCityPlayerX = cityPlayerX;
                     countries[countryId].lastCityPlayerY = cityPlayerY;

@@ -84,6 +84,10 @@ void generateCityChunks(int count) {
 
     for (int i = 0; i < MAX_CHUNKS; ++i) {
         chunks[i].houseRoot = NULL;
+        chunks[i].connectionCount = 0;  
+        for (int j = 0; j < MAX_CONNECTIONS; j++) {
+            chunks[i].connections[j].active = 0;
+        }
     }
 
     if (count < 4) count = 4;
@@ -147,6 +151,7 @@ void generateCityChunks(int count) {
                 chunks[q].width = width;
                 chunks[q].height = height;
                 chunks[q].valid = 1;
+                chunks[q].connectionCount = 0;  // Initialize connection count for new chunks
 
                 fillChunk(x, y, width, height);
 
@@ -199,7 +204,7 @@ void generateCityChunks(int count) {
                 chunks[i].width = width;
                 chunks[i].height = height;
                 chunks[i].valid = 1;
-
+                chunks[i].connectionCount = 0; 
                 fillChunk(x, y, width, height);
 
                 if (i % 2 == 0) {
@@ -275,6 +280,11 @@ void drawCleanRoad(int x1, int y1, int x2, int y2) {
     }
 }
 void primMST(int numChunks) {
+    if (numChunks <= 0 || numChunks > MAX_CHUNKS) {
+        printf("Invalid number of chunks: %d\n", numChunks);
+        return;
+    }
+    
     int validCount = 0;
     int validIndices[MAX_CHUNKS];
     
@@ -575,7 +585,7 @@ void citySandbox() {
             countries[currentCountryId].savedChunks[i].width = chunks[i].width;
             countries[currentCountryId].savedChunks[i].height = chunks[i].height;
             countries[currentCountryId].savedChunks[i].valid = chunks[i].valid;
-            countries[currentCountryId].savedChunks[i].houseRoot = copyHouseTree(chunks[i].houseRoot);
+            countries[currentCountryId].savedChunks[i].houseRoot = copyChunkData(&chunks[i], &countries[currentCountryId].savedChunks[i]);
         }
         countries[currentCountryId].lastCityPlayerX = cityPlayerX;
         countries[currentCountryId].lastCityPlayerY = cityPlayerY;
