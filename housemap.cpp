@@ -187,8 +187,8 @@ void housePlacementLoopForChunk(Chunk* cityChunk) {
 
     if (!cityChunk->houseRoot) cityChunk->houseRoot = NULL;
 
-    int gridW = cityChunk->width;
-    int gridH = cityChunk->height;
+    int gridW = GRID_COLS;
+    int gridH = GRID_ROWS;
 
     while (1) {
         drawGrid(cursorX, cursorY, cityChunk->houseRoot, gridW, gridH);
@@ -209,14 +209,13 @@ void housePlacementLoopForChunk(Chunk* cityChunk) {
             HouseNode* existing = searchHouseInChunk(cityChunk->houseRoot, 
                 cityChunk->x, cityChunk->y,
                 cursorX, cursorY);
-                if (existing) {
+            if (existing) {
                 printf("\n--- House Detail ---\n");
                 printf("Name: %s\n", existing->house.name);
                 printf("Owner: %s\n", existing->house.owner);
                 printf("Location: %s\n", existing->house.location);
                 printf("Electric Power: %d Watt\n", existing->house.electricPower);
                 printf("Internet Speed: %d Mbps\n", existing->house.internetSpeed);
-                // printf("Grid: (%d,%d)\n", existing->house.gridX, existing->house.gridY);
                 printf("Press any key to continue...\n");
                 _getch();
             } else {

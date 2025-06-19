@@ -1,8 +1,8 @@
 #ifndef HOUSEMAP_H
 #define HOUSEMAP_H
 
-#define GRID_ROWS 10
-#define GRID_COLS 10
+#define GRID_ROWS 20
+#define GRID_COLS 20
 
 struct House {
     int id;
