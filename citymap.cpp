@@ -151,7 +151,7 @@ void generateCityChunks(int count) {
                 chunks[q].width = width;
                 chunks[q].height = height;
                 chunks[q].valid = 1;
-                chunks[q].connectionCount = 0;  // Initialize connection count for new chunks
+                chunks[q].connectionCount = 0;  
 
                 fillChunk(x, y, width, height);
 

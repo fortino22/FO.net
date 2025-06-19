@@ -269,8 +269,25 @@ void animateKruskal(HouseNode* root) {
     for (int i = 0; i < n; ++i)
         grid[houses[i].y][houses[i].x] = 'H';
 
-    // Clear previous connections
-    chunk->connectionCount = 0;
+    // *** FIX: Clear only connections for THIS CHUNK ***
+    for (int i = 0; i < chunk->connectionCount; i++) {
+        if (chunk->connections[i].chunkX == chunk->x && 
+            chunk->connections[i].chunkY == chunk->y) {
+            chunk->connections[i].active = 0;
+        }
+    }
+    
+    // Compact the connection array
+    int activeCount = 0;
+    for (int i = 0; i < chunk->connectionCount; i++) {
+        if (chunk->connections[i].active) {
+            if (activeCount != i) {
+                chunk->connections[activeCount] = chunk->connections[i];
+            }
+            activeCount++;
+        }
+    }
+    chunk->connectionCount = activeCount;
 
     // Show initial grid with just houses
     system("cls");
@@ -305,8 +322,8 @@ void animateKruskal(HouseNode* root) {
                 chunk->connections[chunk->connectionCount].endX = houses[v].x;
                 chunk->connections[chunk->connectionCount].endY = houses[v].y;
                 chunk->connections[chunk->connectionCount].active = 1;
-                chunk->connections[chunk->connectionCount].chunkX = chunk->x; // Add chunk identifier
-                chunk->connections[chunk->connectionCount].chunkY = chunk->y; // Add chunk identifier
+                chunk->connections[chunk->connectionCount].chunkX = chunk->x; // Chunk identifier
+                chunk->connections[chunk->connectionCount].chunkY = chunk->y; // Chunk identifier
                 chunk->connectionCount++;
             }
             
@@ -324,6 +341,7 @@ void animateKruskal(HouseNode* root) {
     printf("Press any key to continue...\n");
     _getch();
 }
+
 
 void disconnectHouses(HouseNode* root) {
     // Find the chunk this house tree belongs to
@@ -345,8 +363,18 @@ void disconnectHouses(HouseNode* root) {
     int n = 0;
     collectHouses(root, houses, &n);
     
-    if (n < 2 || chunk->connectionCount == 0) {
-        printf("No connections to remove.\n");
+    // Count active connections in this specific chunk
+    int activeConnectionsInChunk = 0;
+    for (int i = 0; i < chunk->connectionCount; i++) {
+        if (chunk->connections[i].active && 
+            chunk->connections[i].chunkX == chunk->x && 
+            chunk->connections[i].chunkY == chunk->y) {
+            activeConnectionsInChunk++;
+        }
+    }
+    
+    if (n < 2 || activeConnectionsInChunk == 0) {
+        printf("No connections to remove in this city.\n");
         _getch();
         return;
     }
@@ -359,9 +387,12 @@ void disconnectHouses(HouseNode* root) {
     for (int i = 0; i < n; ++i)
         grid[houses[i].y][houses[i].x] = 'H';
     
-    // Draw all connections
+    // Draw all connections for THIS CHUNK only
     for (int i = 0; i < chunk->connectionCount; i++) {
-        if (chunk->connections[i].active) {
+        if (chunk->connections[i].active && 
+            chunk->connections[i].chunkX == chunk->x && 
+            chunk->connections[i].chunkY == chunk->y) {
+            
             int x1 = chunk->connections[i].startX;
             int y1 = chunk->connections[i].startY;
             int x2 = chunk->connections[i].endX;
@@ -406,9 +437,11 @@ void disconnectHouses(HouseNode* root) {
         int x, y;
     } Point;
     
-    // For each connection, trace back
+    // For each connection in THIS CHUNK ONLY, trace back
     for (int c = chunk->connectionCount - 1; c >= 0; c--) {
-        if (!chunk->connections[c].active) continue;
+        if (!chunk->connections[c].active || 
+            chunk->connections[c].chunkX != chunk->x || 
+            chunk->connections[c].chunkY != chunk->y) continue;
         
         int x1 = chunk->connections[c].startX;
         int y1 = chunk->connections[c].startY;
@@ -478,12 +511,21 @@ void disconnectHouses(HouseNode* root) {
             usleep(150000);
         }
         
-        // Deactivate this connection in persistent storage
+        // Deactivate only THIS connection
         chunk->connections[c].active = 0;
     }
     
-    // Clear all connections
-    chunk->connectionCount = 0;
+    // *** FIX: Don't clear ALL connections, just compact the array ***
+    int activeCount = 0;
+    for (int i = 0; i < chunk->connectionCount; i++) {
+        if (chunk->connections[i].active) {
+            if (activeCount != i) {
+                chunk->connections[activeCount] = chunk->connections[i];
+            }
+            activeCount++;
+        }
+    }
+    chunk->connectionCount = activeCount;
     
     usleep(500000);
     printf("\nDisconnection traceback complete!\n");
@@ -598,17 +640,35 @@ void drawGrid(int cursorX, int cursorY, HouseNode* root, int gridW, int gridH) {
 
 
 HouseNode* copyChunkData(Chunk* srcChunk, Chunk* destChunk) {
+    // Save destination coordinates
+    int destX = destChunk->x;
+    int destY = destChunk->y;
+    
+    // Copy connection count and initialize
     destChunk->connectionCount = srcChunk->connectionCount;
     
     for (int i = 0; i < MAX_CONNECTIONS; i++) {
         if (i < srcChunk->connectionCount) {
+            // Copy the connection first
             destChunk->connections[i] = srcChunk->connections[i];
-            destChunk->connections[i].chunkX = srcChunk->x;
-            destChunk->connections[i].chunkY = srcChunk->y;
+            
+            // ONLY update chunk identifiers for connections that belong to this chunk
+            if (srcChunk->connections[i].chunkX == srcChunk->x && 
+                srcChunk->connections[i].chunkY == srcChunk->y) {
+                // This connection belongs to the source chunk, update to destination chunk
+                destChunk->connections[i].chunkX = destX;
+                destChunk->connections[i].chunkY = destY;
+            }
+            // For other connections, keep their original chunk identifiers
         } else {
+            // Initialize extra connections
             destChunk->connections[i].active = 0;
         }
     }
+    
+    // Restore destination coordinates (in case they were modified)
+    destChunk->x = destX;
+    destChunk->y = destY;
     
     return copyHouseTree(srcChunk->houseRoot);
 }
