@@ -22,27 +22,30 @@ void clearCityMap() {
 
 void printCityMap() {
     printf("\033[H");
-    
     for (int y = 0; y < CITY_HEIGHT; y++) {
         for (int x = 0; x < CITY_WIDTH; x++) {
             if (showCityPlayer && x == cityPlayerX && y == cityPlayerY) {
-                printf("\033[31mP\033[0m"); 
+                printf("\033[31mP\033[0m");
             } else if (cityMap[y][x] == '#') {
-                bool isBuilding = false;
-                
-                int adjacentCount = 0;
-                if (y > 0 && cityMap[y-1][x] == '#') adjacentCount++;
-                if (y < CITY_HEIGHT-1 && cityMap[y+1][x] == '#') adjacentCount++;
-                if (x > 0 && cityMap[y][x-1] == '#') adjacentCount++;
-                if (x < CITY_WIDTH-1 && cityMap[y][x+1] == '#') adjacentCount++;
-                
-                if (adjacentCount >= 3) {
-                    printf("\033[36m#\033[0m");
+                // Check if this is the center of any chunk
+                bool isChunkCenter = false;
+                for (int i = 0; i < MAX_CHUNKS; i++) {
+                    if (chunks[i].valid &&
+                        x >= chunks[i].x - chunks[i].width/2 &&
+                        x <  chunks[i].x + (chunks[i].width+1)/2 &&
+                        y >= chunks[i].y - chunks[i].height/2 &&
+                        y <  chunks[i].y + (chunks[i].height+1)/2) {
+                        isChunkCenter = true;
+                        break;
+                    }
+                }
+                if (isChunkCenter) {
+                    printf("\033[34m#\033[0m"); // Always blue for chunk area
                 } else {
-                    printf("\033[33m#\033[0m");
+                    printf("\033[33m#\033[0m"); // Yellow for path
                 }
             } else if (cityMap[y][x] == ' ') {
-                printf("\033[34m.\033[0m"); 
+                printf("\033[34m.\033[0m");
             } else {
                 printf("%c", cityMap[y][x]);
             }
@@ -74,7 +77,8 @@ bool isChunkOverlapping(int x, int y, int width, int height) {
 void fillChunk(int x, int y, int width, int height) {
     for (int j = y; j < y + height; j++) {
         for (int i = x; i < x + width; i++) {
-            cityMap[j][i] = '#';
+            if (i >= 0 && i < CITY_WIDTH && j >= 0 && j < CITY_HEIGHT)
+                cityMap[j][i] = '#';
         }
     }
 }
@@ -232,51 +236,32 @@ void generateCityChunks(int count) {
     printCityMap();
     usleep(FRAME_DELAY);
 }
+// Replace your drawCleanRoad with this version:
 void drawCleanRoad(int x1, int y1, int x2, int y2) {
-    if (x1 < 0 || x1 >= CITY_WIDTH || y1 < 0 || y1 >= CITY_HEIGHT ||
-        x2 < 0 || x2 >= CITY_WIDTH || y2 < 0 || y2 >= CITY_HEIGHT) {
-        return; 
-    }
-    
-    int safeMargin = 5;
-    x1 = (x1 < safeMargin) ? safeMargin : ((x1 >= CITY_WIDTH-safeMargin) ? CITY_WIDTH-safeMargin-1 : x1);
-    y1 = (y1 < safeMargin) ? safeMargin : ((y1 >= CITY_HEIGHT-safeMargin) ? CITY_HEIGHT-safeMargin-1 : y1);
-    x2 = (x2 < safeMargin) ? safeMargin : ((x2 >= CITY_WIDTH-safeMargin) ? CITY_WIDTH-safeMargin-1 : x2);
-    y2 = (y2 < safeMargin) ? safeMargin : ((y2 >= CITY_HEIGHT-safeMargin) ? CITY_HEIGHT-safeMargin-1 : y2);
-    
-    if (x1 == x2 && y1 == y2) {
-        return; 
-    }
-    
-    int startX = x1;
-    int endX = x2;
-    if (startX > endX) {
-        startX = x2;
-        endX = x1;
-    }
-    
-    for (int x = startX; x <= endX; x++) {
-        if (x >= 0 && x < CITY_WIDTH && y1 >= 0 && y1 < CITY_HEIGHT) {
-            cityMap[y1][x] = '#';
+    int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+    int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+    int err = dx + dy, e2;
+
+    int x = x1, y = y1;
+    while (1) {
+        if (x >= 0 && x < CITY_WIDTH && y >= 0 && y < CITY_HEIGHT)
+            cityMap[y][x] = '#';
+
+        if (x == x2 && y == y2) break;
+
+        e2 = 2 * err;
+        int prev_x = x, prev_y = y;
+
+        if (e2 >= dy) { err += dy; x += sx; }
+        if (e2 <= dx) { err += dx; y += sy; }
+
+        // If both x and y changed, it's a diagonal step: widen the path
+        if (x != prev_x && y != prev_y) {
+            if (x >= 0 && x < CITY_WIDTH && prev_y >= 0 && prev_y < CITY_HEIGHT)
+                cityMap[prev_y][x] = '#';
+            if (prev_x >= 0 && prev_x < CITY_WIDTH && y >= 0 && y < CITY_HEIGHT)
+                cityMap[y][prev_x] = '#';
         }
-    }
-    
-    int startY = y1;
-    int endY = y2;
-    if (startY > endY) {
-        startY = y2;
-        endY = y1;
-    }
-    
-    for (int y = startY; y <= endY; y++) {
-        if (x2 >= 0 && x2 < CITY_WIDTH && y >= 0 && y < CITY_HEIGHT) {
-            cityMap[y][x2] = '#';
-        }
-    }
-    
-    if (rand() % 3 == 0) {
-        printCityMap();
-        usleep(FRAME_DELAY/4);
     }
 }
 void primMST(int numChunks) {
