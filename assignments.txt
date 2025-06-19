@@ -1,2 +1,2 @@
-3074,4288,test,test,completed
+3074,4288,test,test,pending
 3791,4288,test,test,pending

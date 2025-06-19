@@ -5,6 +5,7 @@
 #include "task_management.h"
 
 
+
 int main() {
     AVLNode* userRoot = NULL;
     AssignmentNode* assignmentRoot = NULL;
@@ -19,24 +20,36 @@ int main() {
     }
     
     int choice;
+    char input[10];
     do {
         printf("\n===== Task Management System =====\n");
         printf("1. Register\n");
         printf("2. Login\n");
         printf("0. Exit\n");
         printf("Enter your choice: ");
-        scanf("%d", &choice);
-        getchar(); 
+        fgets(input, sizeof(input), stdin);
+
+        input[strcspn(input, "\n")] = 0;
+
+        if (strlen(input) == 1 && (input[0] == '0' || input[0] == '1' || input[0] == '2')) {
+            choice = input[0] - '0';
+        } else {
+            printf("Invalid choice. Please enter a number from the menu.\n");
+            continue;
+        }
         
         switch (choice) {
             case 1:
+                system("cls");
                 registerUser(&userRoot);
                 saveUsersToFile(userRoot, CREDENTIALS_FILE); 
                 break;
             case 2:
+                system("cls");
                 loginUser(userRoot, &assignmentRoot);
                 break;
             case 0:
+                system("cls");
                 saveAllData(userRoot, assignmentRoot);
                 printf("Thank you for using our system!\n");
                 break;
@@ -47,6 +60,3 @@ int main() {
     
     return 0;
 }
-
-
-

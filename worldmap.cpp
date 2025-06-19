@@ -610,15 +610,14 @@ void startGameLoop(int numCountries) {
     printf("Press Q to quit exploration\n\n");
 
     while (running) {
-        printf("Move player (w/a/s/d, q to quit): ");
-        move = _getch();
-        printf("%c\n", move);
-
-        if (move == 'q' || move == 'Q') {
-            running = 0;
-        } else {
-            movePlayer(move, numCountries);
-            printMap();
+        if (_kbhit()) {
+            move = _getch();
+            if (move == 'q' || move == 'Q') {
+                running = 0;
+            } else {
+                movePlayer(move, numCountries);
+                printMap();
+            }
         }
     }
 }

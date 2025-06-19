@@ -4,6 +4,8 @@
 #include <float.h>
 #include <string.h>
 #include <cctype>
+#include <conio.h> 
+
 #define PATH_CHAR '#'
 #define BUILDING_CHAR '#'
 
@@ -464,41 +466,43 @@ int initializeCity(int numChunks) {
 
 
 
-extern int currentCountryId; // Set this before entering the city!
-extern Country countries[];  // Your global countries array
+extern int currentCountryId; 
+extern Country countries[];  
 
 void citySandbox() {
     char move;
     int running = 1;
 
-    printf("\nWelcome to the city! Use WASD to move, 'e' to enter city, 'q' to quit\n");
+    printf("\nWelcome to the city!\n");
+    printCityMap();
+    printf("Controls: Use W/A/S/D to move (no Enter needed), E to enter house placement, Q to quit city.\n");
 
     while (running) {
-        printf("Move direction (w/a/s/d, e to enter city, q to quit): ");
-        fflush(stdout);
+        if (_kbhit()) {
+            move = _getch();
 
-        move = getchar();
+            if (move == 'q' || move == 'Q') {
+                running = 0;
+            } else if (move == 'w' || move == 'a' || move == 's' || move == 'd' ||
+                       move == 'W' || move == 'A' || move == 'S' || move == 'D') {
+                move = tolower(move);
+                movePlayerInCity(move);
 
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF);
-
-        if (move == 'q' || move == 'Q') {
-            running = 0;
-        } else if (move == 'w' || move == 'a' || move == 's' || move == 'd' ||
-                   move == 'W' || move == 'A' || move == 'S' || move == 'D') {
-            move = tolower(move);
-            movePlayerInCity(move);
-
-            printf("\033[H\033[J");
-            printCityMap();
-        } else if (move == 'e' || move == 'E') {
-            enterHouseGridForCurrentCity();
-            printf("\033[H\033[J");
-            printCityMap();
-        } else {
-            printf("Invalid input. Use w/a/s/d to move, e to enter city, q to quit.\n");
-            fflush(stdout);
+                printf("\033[H\033[J");
+                printCityMap();
+                printf("Controls: Use W/A/S/D to move (no Enter needed), E to enter house placement, Q to quit city.\n");
+            } else if (move == 'e' || move == 'E') {
+                enterHouseGridForCurrentCity();
+                printf("\033[H\033[J");
+                printCityMap();
+                printf("Controls: Use W/A/S/D to move (no Enter needed), E to enter house placement, Q to quit city.\n");
+            } else {
+                printf("Invalid input. Use w/a/s/d to move, e to enter city, q to quit.\n");
+                fflush(stdout);
+            }
         }
+        // Optional: Sleep to reduce CPU usage
+        // Sleep(10); // Uncomment if you include <windows.h>
     }
     if (currentCountryId >= 0) {
         memcpy(countries[currentCountryId].savedCityMap, cityMap, sizeof(cityMap));

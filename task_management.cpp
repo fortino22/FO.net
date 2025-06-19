@@ -12,28 +12,42 @@ void getInput(char* buffer, int size, const char* prompt) {
 }
 
 void getPasswordInput(char* buffer, int size, const char* prompt) {
-    printf("%s", prompt);
-    int i = 0;
-    char ch;
-    while (1) {
-        ch = _getch();
-        if (ch == 13) { 
-            buffer[i] = '\0';
-            break;
-        } else if (ch == 8) { 
-            if (i > 0) {
-                i--;
-                printf("\b \b"); 
+    int valid = 0;
+    while (!valid) {
+        printf("%s", prompt);
+        int i = 0;
+        char ch;
+        while (1) {
+            ch = _getch();
+            if (ch == 13) { 
+                buffer[i] = '\0';
+                break;
+            } else if (ch == 8) { 
+                if (i > 0) {
+                    i--;
+                    printf("\b \b");
+                }
+            } else if (ch == 27) { 
+                buffer[0] = '\0';
+                break;
+            } else if (i < size - 1) {
+                buffer[i++] = ch;
+                printf("*");
             }
-        } else if (ch == 27) { 
-            buffer[0] = '\0';
-            break;
-        } else if (i < size - 1) { 
-            buffer[i++] = ch;
-            printf("*");
+        }
+        printf("\n");
+
+        int hasUpper = 0, hasDigit = 0;
+        for (int j = 0; buffer[j]; j++) {
+            if (buffer[j] >= 'A' && buffer[j] <= 'Z') hasUpper = 1;
+            if (buffer[j] >= '0' && buffer[j] <= '9') hasDigit = 1;
+        }
+        if (!hasUpper || !hasDigit) {
+            printf("Password must contain at least one uppercase letter and one number. Please try again.\n");
+        } else {
+            valid = 1;
         }
     }
-    printf("\n");
 }
 
 void getValidStatus(char* buffer, int size) {
@@ -69,19 +83,30 @@ void collectUserAssignments(AssignmentNode* root, int userId, AssignmentNode* as
 void registerUser(AVLNode** root) {
     char username[50], password[50];
     printf("\n===== Registration =====\n");
-    
-    getInput(username, 50, "Enter username: ");
-    getPasswordInput(password, 50, "Enter password: ");
-    
+
+    do {
+        getInput(username, 50, "Enter username: ");
+        if (strlen(username) == 0) {
+            printf("Username cannot be empty. Please try again.\n");
+        }
+    } while (strlen(username) == 0);
+
+    do {
+        getPasswordInput(password, 50, "Enter password: ");
+        if (strlen(password) == 0) {
+            printf("Password cannot be empty. Please try again.\n");
+        }
+    } while (strlen(password) == 0);
+
     char role[20] = "worker";
-    
+
     if (search(*root, username)) {
         printf("Username already exists. Please choose another.\n");
         return;
     }
-    
+
     int userId = generateRandomId();
-    
+
     *root = insert(*root, userId, username, password, role);
     printf("Registration successful! Your User ID is: %d\n", userId);
     printf("You have been registered as a worker.\n");
@@ -109,6 +134,7 @@ void loginUser(AVLNode* root, AssignmentNode** assignmentRoot) {
 }
 
 void managerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int managerId) {
+    char input[10];
     int choice;
     do {
         printf("\n===== Manager Menu =====\n");
@@ -118,26 +144,40 @@ void managerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int managerId) 
         printf("4. View Workers\n");
         printf("5. Delete Task\n");
         printf("6. Save All Data\n");
-        printf("0. Logout\n");
+        printf("0. Logout (or press q)\n");
         printf("Enter your choice: ");
-        scanf("%d", &choice);
-        getchar(); 
-        
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = 0;
+
+        if (strlen(input) == 1 && (input[0] == 'q' || input[0] == 'Q' || input[0] == '0')) {
+            choice = 0;
+        } else if (strlen(input) == 1 && input[0] >= '1' && input[0] <= '6') {
+            choice = input[0] - '0';
+        } else {
+            printf("Invalid choice. Please try again.\n");
+            continue;
+        }
+
         switch (choice) {
             case 1:
+                system("cls");
                 assignTask(root, assignmentRoot, managerId);
                 saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE);
                 break;
             case 2:
+                system("cls");
                 displayAllAssignments(*assignmentRoot);
                 break;
             case 3:
+                system("cls");
                 viewAllUsers(root);
                 break;
             case 4:
+                system("cls");
                 viewWorkers(root);
                 break;
             case 5: {
+                system("cls");
                 printf("\n--- All Available Assignments ---\n");
                 displayAllAssignments(*assignmentRoot);
                 int assignmentId;
@@ -175,16 +215,20 @@ void workerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int workerId) {
         
         switch (choice) {
             case 1:
+                system("cls");
                 startAssignment(assignmentRoot, workerId);
                 break;
             case 2:
+                system("cls");
                 updateTaskStatus(assignmentRoot, workerId);
                 saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE);
                 break;
             case 3:
+                system("cls");
                 displayUserAssignments(*assignmentRoot, workerId);
                 break;
             case 0:
+                system("cls");
                 printf("Logging out...\n");
                 break;
             default:
