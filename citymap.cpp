@@ -339,68 +339,7 @@ void primMST(int numChunks) {
             chunks[idx2].x, chunks[idx2].y
         );
     }
-    
-    int extraRoads = 1 + (validCount > 4 ? 1 : 0);
-    
-    typedef struct {
-        int src, dest;
-        double dist;
-    } Connection;
-    
-    Connection connections[MAX_CHUNKS * MAX_CHUNKS];
-    int connCount = 0;
-    
-    for (int i = 0; i < validCount; i++) {
-        for (int j = i+1; j < validCount; j++) {
-            bool connected = false;
-            for (int k = 1; k < validCount; k++) {
-                if ((parent[k] == i && k == j) || (parent[k] == j && k == i)) {
-                    connected = true;
-                    break;
-                }
-            }
-            
-            if (!connected) {
-                int idx1 = validIndices[i];
-                int idx2 = validIndices[j];
-                
-                if (!chunks[idx1].valid || !chunks[idx2].valid) continue;
-                
-                double dist = sqrt(
-                    pow(chunks[idx1].x - chunks[idx2].x, 2) +
-                    pow(chunks[idx1].y - chunks[idx2].y, 2)
-                );
-                
-                if (dist < 0.0001) continue; 
-                
-                connections[connCount].src = idx1;
-                connections[connCount].dest = idx2;
-                connections[connCount].dist = dist;
-                connCount++;
-            }
-        }
-    }
-    
-    if (connCount == 0) return;
-    
-    for (int i = 0; i < connCount; i++) {
-        for (int j = i+1; j < connCount; j++) {
-            if (connections[j].dist > connections[i].dist) {
-                Connection temp = connections[i];
-                connections[i] = connections[j];
-                connections[j] = temp;
-            }
-        }
-    }
-    
-    for (int i = 0; i < extraRoads && i < connCount; i++) {
-        drawCleanRoad(
-            chunks[connections[i].src].x, chunks[connections[i].src].y,
-            chunks[connections[i].dest].x, chunks[connections[i].dest].y
-        );
-    }
 }
-
 
 void addSimplifiedCrossRoads() {
     int minX = CITY_WIDTH, maxX = 0;
