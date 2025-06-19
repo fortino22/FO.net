@@ -14,6 +14,8 @@
 #define MAX_COUNTRIES 5
 #define MAX_VERTICES 15
 #define COUNTRY_MARGIN 5
+#define MAX_WORLDS 5
+extern int currentWorldId;
 
 typedef struct {
     int vertices[MAX_VERTICES][2]; 

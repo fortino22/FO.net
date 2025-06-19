@@ -1,7 +1,10 @@
 #include "worldmap.h"
 #include <conio.h>
 #include "citymap.h"
+
 int currentCountryId = -1; 
+int currentWorldId = 0;
+int totalWorlds = 1; 
 
 Country countries[MAX_COUNTRIES];
 Edge edges[MAX_COUNTRIES * MAX_COUNTRIES];
@@ -84,7 +87,6 @@ int getPlayerCountry(int numCountries) {
     }
     return -1;
 }
-
 
 int isOverlapping(int vertices[][2], int n) {
     int minX = WIDTH, maxX = 0, minY = HEIGHT, maxY = 0;
@@ -250,6 +252,15 @@ int generateCountries(int desiredCount) {
             countries[count].baseRadius = 5 + rand() % 4;
             countries[count].valid = 1;
 
+            // Per-country city data initialization
+            countries[count].cityGenerated = 0;
+            countries[count].cityNumChunks = 0;
+            countries[count].lastCityPlayerX = -1;
+            countries[count].lastCityPlayerY = -1;
+            for (int j = 0; j < MAX_CHUNKS; j++) {
+                countries[count].savedChunks[j].houseRoot = NULL;
+            }
+
             fillPolygon(vertices, numVertices, '#');
 
             if (count % 2 == 0) {
@@ -274,7 +285,6 @@ int generateCountries(int desiredCount) {
 
     return validCount;
 }
-
 void createEdges(int n) {
     edgeCount = 0;
     for (int i = 0; i < n; i++) {
@@ -429,10 +439,12 @@ void initializePlayerPosition(int numCountries) {
     }
 }
 
+
+
 void movePlayer(char direction, int numCountries) {
     int prevX = playerX, prevY = playerY;
     int newX = playerX, newY = playerY;
-    
+
     if (direction == 'w') newY--;
     if (direction == 's') newY++;
     if (direction == 'a') newX--;
@@ -442,7 +454,7 @@ void movePlayer(char direction, int numCountries) {
         (map[newY][newX] == '#' || map[newY][newX] == '+' || map[newY][newX] == '=')) {
         playerX = newX;
         playerY = newY;
-        
+
         int countryId = getPlayerCountry(numCountries);
         if (countryId >= 0) {
             int prevCountry = -1;
@@ -456,29 +468,24 @@ void movePlayer(char direction, int numCountries) {
                     }
                 }
             }
-            
+
             if (prevCountry != countryId) {
                 printf("\nEntering %s country...\n", countries[countryId].name ? countries[countryId].name : "unnamed");
                 printf("Press any key to explore the city...");
                 _getch();
-            
+
                 system("cls");
                 printf("\033[H\033[J");
-            
+                // int currentWorld = currentWorldId;
                 if (!countries[countryId].cityGenerated) {
-                     // Set current country ID before city initialization
                     currentCountryId = countryId;
-                    
                     int numChunks = 10 + (countries[countryId].baseRadius / 2);
                     int validCityChunks = initializeCity(numChunks);
                     countries[countryId].cityGenerated = 1;
                     countries[countryId].cityNumChunks = numChunks;
                     memcpy(countries[countryId].savedCityMap, cityMap, sizeof(cityMap));
-                    
-                    // Use countryId (not currentCountryId)
                     for (int i = 0; i < MAX_CHUNKS; ++i) {
                         freeHouseTree(countries[countryId].savedChunks[i].houseRoot); 
-                        // Copy chunk fields individually
                         countries[countryId].savedChunks[i].x = chunks[i].x;
                         countries[countryId].savedChunks[i].y = chunks[i].y;
                         countries[countryId].savedChunks[i].width = chunks[i].width;
@@ -489,24 +496,21 @@ void movePlayer(char direction, int numCountries) {
                     countries[countryId].lastCityPlayerX = cityPlayerX;
                     countries[countryId].lastCityPlayerY = cityPlayerY;
                 } else {
-                        memcpy(cityMap, countries[countryId].savedCityMap, sizeof(cityMap));
-                        for (int i = 0; i < MAX_CHUNKS; ++i) {
-                            freeHouseTree(chunks[i].houseRoot);
-                            // Copy all fields except houseRoot
-                            chunks[i].x = countries[countryId].savedChunks[i].x;
-                            chunks[i].y = countries[countryId].savedChunks[i].y;
-                            chunks[i].width = countries[countryId].savedChunks[i].width;
-                            chunks[i].height = countries[countryId].savedChunks[i].height;
-                            chunks[i].valid = countries[countryId].savedChunks[i].valid;
-                            chunks[i].houseRoot = copyHouseTree(countries[countryId].savedChunks[i].houseRoot);
-                        }
-                        cityPlayerX = countries[countryId].lastCityPlayerX;
-                        cityPlayerY = countries[countryId].lastCityPlayerY;
-                        printCityMap();
+                    memcpy(cityMap, countries[countryId].savedCityMap, sizeof(cityMap));
+                    for (int i = 0; i < MAX_CHUNKS; ++i) {
+                        freeHouseTree(chunks[i].houseRoot);
+                        chunks[i].x = countries[countryId].savedChunks[i].x;
+                        chunks[i].y = countries[countryId].savedChunks[i].y;
+                        chunks[i].width = countries[countryId].savedChunks[i].width;
+                        chunks[i].height = countries[countryId].savedChunks[i].height;
+                        chunks[i].valid = countries[countryId].savedChunks[i].valid;
+                        chunks[i].houseRoot = copyHouseTree(countries[countryId].savedChunks[i].houseRoot);
+                    }
+                    cityPlayerX = countries[countryId].lastCityPlayerX;
+                    cityPlayerY = countries[countryId].lastCityPlayerY;
+                    printCityMap();
                 }
-            
-                citySandbox();
-            
+                citySandbox(); // <-- Ensure citySandbox is called after loading/generating city
                 system("cls");
                 printf("\033[H\033[J");
                 printf("Returning to world map...\n");
@@ -516,18 +520,17 @@ void movePlayer(char direction, int numCountries) {
     }
 }
 
-
 int initializeWorld(int numCountries) {
     srand(time(NULL));
     printf("\033[2J");
 
+    totalWorlds = 1; // Only one world
+
     clearMap();
-    int validCount = generateCountries(numCountries);
-    printf("Successfully generated %d countries\n", validCount);
+    int validCount = generateCountries(numCountries); // numCountries = 5
+    printf("Successfully generated %d countries in the world\n", validCount);
 
     createEdges(numCountries);
-
-    showPlayer = 0;
     kruskalAndDrawDoubleLine(numCountries);
 
     initializePlayerPosition(numCountries);
@@ -541,15 +544,15 @@ int initializeWorld(int numCountries) {
 void startGameLoop(int numCountries) {
     char move;
     int running = 1;
-    
+
     printf("\nExplore the world! Use WASD to move, enter countries to view cities\n");
     printf("Press Q to quit exploration\n\n");
-    
+
     while (running) {
         printf("Move player (w/a/s/d, q to quit): ");
-        move = _getch(); 
+        move = _getch();
         printf("%c\n", move);
-        
+
         if (move == 'q' || move == 'Q') {
             running = 0;
         } else {

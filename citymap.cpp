@@ -566,12 +566,10 @@ void citySandbox() {
             fflush(stdout);
         }
     }
-
     if (currentCountryId >= 0) {
         memcpy(countries[currentCountryId].savedCityMap, cityMap, sizeof(cityMap));
         for (int i = 0; i < MAX_CHUNKS; ++i) {
             freeHouseTree(countries[currentCountryId].savedChunks[i].houseRoot);
-            // Copy all fields except houseRoot
             countries[currentCountryId].savedChunks[i].x = chunks[i].x;
             countries[currentCountryId].savedChunks[i].y = chunks[i].y;
             countries[currentCountryId].savedChunks[i].width = chunks[i].width;
