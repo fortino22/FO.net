@@ -558,4 +558,3 @@ void startGameLoop(int numCountries) {
         }
     }
 }
-

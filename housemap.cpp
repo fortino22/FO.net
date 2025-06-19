@@ -60,7 +60,7 @@ HouseNode* insertHouse(HouseNode* node, House house) {
     else if (house.id > node->house.id)
         node->right = insertHouse(node->right, house);
     else
-        return node; 
+        return node; // Already exists
 
     node->height = 1 + housemap_max(getHeight(node->left), getHeight(node->right));
     int balance = getBalance(node);
@@ -82,15 +82,32 @@ HouseNode* insertHouse(HouseNode* node, House house) {
 HouseNode* searchHouse(HouseNode* root, int gridX, int gridY) {
     if (!root) return NULL;
     
+    // Check if this node matches the coordinates
     if (root->house.gridX == gridX && root->house.gridY == gridY)
         return root;
-        
-    HouseNode* found = searchHouse(root->left, gridX, gridY);
-    if (found) return found;
+    
+    // Search both subtrees since we can't determine which side has our coordinates
+    HouseNode* leftResult = searchHouse(root->left, gridX, gridY);
+    if (leftResult) return leftResult;
     
     return searchHouse(root->right, gridX, gridY);
 }
-
+HouseNode* searchHouseById(HouseNode* root, int id) {
+    if (!root) return NULL;
+    
+    if (id == root->house.id)
+        return root;
+    else if (id < root->house.id)
+        return searchHouseById(root->left, id);
+    else
+        return searchHouseById(root->right, id);
+}
+HouseNode* searchHouseInChunk(HouseNode* root, int chunkX, int chunkY, int gridX, int gridY) {
+    if (!root) return NULL;
+    
+    int id = chunkY * 10000 + chunkX * 100 + gridY * 10 + gridX;
+    return searchHouseById(root, id);
+}
 HouseNode* copyHouseTree(HouseNode* root) {
     if (!root) return NULL;
     HouseNode* newNode = (HouseNode*)malloc(sizeof(HouseNode));
@@ -189,8 +206,10 @@ void housePlacementLoopForChunk(Chunk* cityChunk) {
             _getch();
         }
         else if (ch == 13) { // ENTER key
-            HouseNode* existing = searchHouse(cityChunk->houseRoot, cursorX, cursorY);
-            if (existing) {
+            HouseNode* existing = searchHouseInChunk(cityChunk->houseRoot, 
+                cityChunk->x, cityChunk->y,
+                cursorX, cursorY);
+                if (existing) {
                 printf("\n--- House Detail ---\n");
                 printf("Name: %s\n", existing->house.name);
                 printf("Owner: %s\n", existing->house.owner);
