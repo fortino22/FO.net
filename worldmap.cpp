@@ -440,7 +440,6 @@ void initializePlayerPosition(int numCountries) {
 }
 
 
-
 void movePlayer(char direction, int numCountries) {
     int prevX = playerX, prevY = playerY;
     int newX = playerX, newY = playerY;
@@ -459,7 +458,6 @@ void movePlayer(char direction, int numCountries) {
         if (countryId >= 0) {
             int prevCountry = -1;
             if (prevX != newX || prevY != newY) {
-                prevCountry = -1;
                 for (int i = 0; i < numCountries; i++) {
                     if (!countries[i].valid) continue;
                     if (isInside(prevX, prevY, countries[i].vertices, countries[i].numVertices)) {
@@ -469,6 +467,23 @@ void movePlayer(char direction, int numCountries) {
                 }
             }
 
+            // --- FIX: Save the city for the previous country before switching ---
+            if (prevCountry >= 0 && prevCountry != countryId && countries[prevCountry].cityGenerated) {
+                memcpy(countries[prevCountry].savedCityMap, cityMap, sizeof(cityMap));
+                for (int i = 0; i < MAX_CHUNKS; ++i) {
+                    freeHouseTree(countries[prevCountry].savedChunks[i].houseRoot);
+                    countries[prevCountry].savedChunks[i].x = chunks[i].x;
+                    countries[prevCountry].savedChunks[i].y = chunks[i].y;
+                    countries[prevCountry].savedChunks[i].width = chunks[i].width;
+                    countries[prevCountry].savedChunks[i].height = chunks[i].height;
+                    countries[prevCountry].savedChunks[i].valid = chunks[i].valid;
+                    countries[prevCountry].savedChunks[i].houseRoot = copyHouseTree(chunks[i].houseRoot);
+                }
+                countries[prevCountry].lastCityPlayerX = cityPlayerX;
+                countries[prevCountry].lastCityPlayerY = cityPlayerY;
+            }
+            // -------------------------------------------------------------------
+
             if (prevCountry != countryId) {
                 printf("\nEntering %s country...\n", countries[countryId].name ? countries[countryId].name : "unnamed");
                 printf("Press any key to explore the city...");
@@ -476,9 +491,8 @@ void movePlayer(char direction, int numCountries) {
 
                 system("cls");
                 printf("\033[H\033[J");
-                // int currentWorld = currentWorldId;
+                currentCountryId = countryId;
                 if (!countries[countryId].cityGenerated) {
-                    currentCountryId = countryId;
                     int numChunks = 10 + (countries[countryId].baseRadius / 2);
                     int validCityChunks = initializeCity(numChunks);
                     countries[countryId].cityGenerated = 1;
@@ -510,7 +524,7 @@ void movePlayer(char direction, int numCountries) {
                     cityPlayerY = countries[countryId].lastCityPlayerY;
                     printCityMap();
                 }
-                citySandbox(); // <-- Ensure citySandbox is called after loading/generating city
+                citySandbox();
                 system("cls");
                 printf("\033[H\033[J");
                 printf("Returning to world map...\n");
