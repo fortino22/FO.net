@@ -176,19 +176,26 @@ void managerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int managerId) 
                 system("cls");
                 viewWorkers(root);
                 break;
-            case 5: {
-                system("cls");
-                printf("\n--- All Available Assignments ---\n");
-                displayAllAssignments(*assignmentRoot);
-                int assignmentId;
-                printf("Enter Assignment ID to delete: ");
-                scanf("%d", &assignmentId);
-                getchar(); 
-                *assignmentRoot = deleteAssignment(*assignmentRoot, assignmentId);
-                printf("Assignment deleted successfully (if it existed).\n");
-                saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE); 
-                break;
-            }
+                case 5: {
+                    system("cls");
+                    printf("\n--- All Available Assignments ---\n");
+                    displayAllAssignments(*assignmentRoot);
+                
+                    char input[32];
+                    printf("Enter Assignment ID to delete (or 'q' to cancel): ");
+                    fgets(input, sizeof(input), stdin);
+                    input[strcspn(input, "\n")] = 0;
+                    if (strlen(input) == 1 && (input[0] == 'q' || input[0] == 'Q')) {
+                        printf("Operation cancelled.\n");
+                        system("cls");
+                        break;
+                    }
+                    int assignmentId = atoi(input);
+                    *assignmentRoot = deleteAssignment(*assignmentRoot, assignmentId);
+                    printf("Assignment deleted successfully (if it existed).\n");
+                    saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE); 
+                    break;
+                }
             case 6:
                 saveAllData(root, *assignmentRoot);
                 break;
@@ -239,27 +246,42 @@ void workerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int workerId) {
 
 void assignTask(AVLNode* root, AssignmentNode** assignmentRoot, int managerId) {
     int workerId;
-    char title[100], description[500];
-    
+    char title[100], description[500], input[50];
+
     printf("\n===== Assign Task =====\n");
-    
+    printf("Press 'q' at any prompt to cancel this operation.\n");
+
     viewWorkers(root);
-    
+
     printf("Enter Worker's User ID: ");
-    scanf("%d", &workerId);
-    getchar();
-    
+    fgets(input, sizeof(input), stdin);
+    input[strcspn(input, "\n")] = 0;
+    if (strlen(input) == 1 && (input[0] == 'q' || input[0] == 'Q')) {
+        printf("Operation cancelled.\n");
+        return;
+    }
+    workerId = atoi(input);
+
     AVLNode* worker = searchById(root, workerId);
     if (!worker || strcmp(worker->user.role, "worker") != 0) {
         printf("Invalid worker ID or user is not a worker.\n");
         return;
     }
-    
+
     getInput(title, 100, "Enter task title: ");
+    if (strlen(title) == 1 && (title[0] == 'q' || title[0] == 'Q')) {
+        printf("Operation cancelled.\n");
+        return;
+    }
+
     getInput(description, 500, "Enter task description: ");
-    
+    if (strlen(description) == 1 && (description[0] == 'q' || description[0] == 'Q')) {
+        printf("Operation cancelled.\n");
+        return;
+    }
+
     int assignmentId = generateRandomId();
-    
+
     *assignmentRoot = createAssignment(*assignmentRoot, assignmentId, workerId, title, description);
     printf("Task assigned successfully! Assignment ID: %d\n", assignmentId);
 }
