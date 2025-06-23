@@ -590,6 +590,7 @@ int initializeWorld(int numCountries) {
     }
     printf("All cities generated!\n");
 
+    system("cls");
     initializePlayerPosition(numCountries);
 
     showPlayer = 1;

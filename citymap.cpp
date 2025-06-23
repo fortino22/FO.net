@@ -29,7 +29,6 @@ void printCityMap() {
             if (showCityPlayer && x == cityPlayerX && y == cityPlayerY) {
                 printf("\033[31mP\033[0m");
             } else if (cityMap[y][x] == '#') {
-                // Check if this is the center of any chunk
                 bool isChunkCenter = false;
                 for (int i = 0; i < MAX_CHUNKS; i++) {
                     if (chunks[i].valid &&
@@ -42,9 +41,9 @@ void printCityMap() {
                     }
                 }
                 if (isChunkCenter) {
-                    printf("\033[34m#\033[0m"); // Always blue for chunk area
+                    printf("\033[34m#\033[0m");
                 } else {
-                    printf("\033[33m#\033[0m"); // Yellow for path
+                    printf("\033[33m#\033[0m");
                 }
             } else if (cityMap[y][x] == ' ') {
                 printf("\033[34m.\033[0m");
@@ -238,7 +237,7 @@ void generateCityChunks(int count) {
     printCityMap();
     usleep(FRAME_DELAY);
 }
-// Replace your drawCleanRoad with this version:
+
 void drawCleanRoad(int x1, int y1, int x2, int y2) {
     int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
     int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
@@ -257,7 +256,6 @@ void drawCleanRoad(int x1, int y1, int x2, int y2) {
         if (e2 >= dy) { err += dy; x += sx; }
         if (e2 <= dx) { err += dx; y += sy; }
 
-        // If both x and y changed, it's a diagonal step: widen the path
         if (x != prev_x && y != prev_y) {
             if (x >= 0 && x < CITY_WIDTH && prev_y >= 0 && prev_y < CITY_HEIGHT)
                 cityMap[prev_y][x] = '#';
@@ -501,8 +499,7 @@ void citySandbox() {
                 fflush(stdout);
             }
         }
-        // Optional: Sleep to reduce CPU usage
-        // Sleep(10); // Uncomment if you include <windows.h>
+      
     }
     if (currentCountryId >= 0) {
         memcpy(countries[currentCountryId].savedCityMap, cityMap, sizeof(cityMap));

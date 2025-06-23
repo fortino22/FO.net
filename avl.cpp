@@ -254,7 +254,7 @@ AssignmentNode *updateAssignmentStatus(AssignmentNode *root, int assignmentId, c
     AssignmentNode *node = searchAssignment(root, assignmentId);
     if (node) {
         strcpy(node->assignment.status, status);
-        printf("Assignment status updated successfully!\n");
+        // printf("Assignment status updated successfully!\n");
     } else {
         printf("Assignment not found!\n");
     }
@@ -354,7 +354,7 @@ AVLNode* loadUsersFromFile(const char* filename) {
     }
     
     fclose(file);
-    printf("User data loaded from %s successfully!\n", filename);
+    // printf("User data loaded from %s successfully!\n", filename);
     return root;
 }
 
@@ -433,6 +433,6 @@ AssignmentNode* loadAssignmentsFromFile(const char* filename) {
     }
     
     fclose(file);
-    printf("Assignment data loaded from %s successfully!\n", filename);
+    // printf("Assignment data loaded from %s successfully!\n", filename);
     return root;
 }

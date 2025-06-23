@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h> 
 #include "avl.h"
 #include "task_management.h"
 
 
 
 int main() {
+    HWND console = GetConsoleWindow();
+    ShowWindow(console, SW_MAXIMIZE);
     AVLNode* userRoot = NULL;
     AssignmentNode* assignmentRoot = NULL;
     
