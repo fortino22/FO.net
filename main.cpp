@@ -22,23 +22,26 @@ int main() {
         printf("Created default admin user (username: admin, password: admin123)\n");
     }
     
-    int choice;
+    int choice = -1;
     char input[10];
     do {
+        system("cls");
         printf("\n===== Task Management System =====\n");
         printf("1. Register\n");
         printf("2. Login\n");
         printf("0. Exit\n");
         printf("Enter your choice: ");
-        fgets(input, sizeof(input), stdin);
-
-        input[strcspn(input, "\n")] = 0;
-
-        if (strlen(input) == 1 && (input[0] == '0' || input[0] == '1' || input[0] == '2')) {
-            choice = input[0] - '0';
-        } else {
-            printf("Invalid choice. Please enter a number from the menu.\n");
-            continue;
+        
+        while (1) {
+            fgets(input, sizeof(input), stdin);
+            input[strcspn(input, "\n")] = 0;
+            
+            if (strlen(input) == 1 && (input[0] == '0' || input[0] == '1' || input[0] == '2')) {
+                choice = input[0] - '0';
+                break; 
+            } else {
+                printf("Invalid choice. Please enter a number from the menu (0, 1, or 2): ");
+            }
         }
         
         switch (choice) {
@@ -56,8 +59,6 @@ int main() {
                 saveAllData(userRoot, assignmentRoot);
                 printf("Thank you for using our system!\n");
                 break;
-            default:
-                printf("Invalid choice. Please try again.\n");
         }
     } while (choice != 0);
     

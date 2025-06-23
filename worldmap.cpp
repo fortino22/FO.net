@@ -1,6 +1,7 @@
 #include "worldmap.h"
 #include <conio.h>
 #include "citymap.h"
+#include <parallel/compatibility.h>
 
 int currentCountryId = -1; 
 int currentWorldId = 0;
@@ -481,48 +482,64 @@ void movePlayer(char direction, int numCountries) {
                     countries[prevCountry].savedChunks[i].height = chunks[i].height;
                     countries[prevCountry].savedChunks[i].valid = chunks[i].valid;
                     countries[prevCountry].savedChunks[i].houseRoot = copyChunkData(&chunks[i], &countries[prevCountry].savedChunks[i]);
-
                 }
                 countries[prevCountry].lastCityPlayerX = cityPlayerX;
                 countries[prevCountry].lastCityPlayerY = cityPlayerY;
             }
 
-            
-                if (prevCountry != countryId) {
-                    printf("\nEntering %s country...\n", countries[countryId].name ? countries[countryId].name : "unnamed");
-                    printf("Press any key to explore the city...");
-                    _getch();
-
-                    system("cls");
-                    printf("\033[H\033[J");
-                    currentCountryId = countryId;
-                    
-                    memcpy(cityMap, countries[countryId].savedCityMap, sizeof(cityMap));
-                    for (int i = 0; i < MAX_CHUNKS; ++i) {
-                        freeHouseTree(chunks[i].houseRoot);
-                        chunks[i].x = countries[countryId].savedChunks[i].x;
-                        chunks[i].y = countries[countryId].savedChunks[i].y;
-                        chunks[i].width = countries[countryId].savedChunks[i].width;
-                        chunks[i].height = countries[countryId].savedChunks[i].height;
-                        chunks[i].valid = countries[countryId].savedChunks[i].valid;
-                        chunks[i].connectionCount = countries[countryId].savedChunks[i].connectionCount;
+            if (prevCountry != countryId) {
+                printf("Do you want to explore the city? (y/n): ");
+                
+                char choice;
+                while (1) {
+                    choice = _getch();
+                    if (choice == 'y' || choice == 'Y') {
+                        printf("%c\n", choice);
                         
-                        for (int j = 0; j < MAX_CONNECTIONS; j++) {
-                            chunks[i].connections[j] = countries[countryId].savedChunks[i].connections[j];
+                        system("cls");
+                        printf("\033[H\033[J");
+                        currentCountryId = countryId;
+                        
+                        memcpy(cityMap, countries[countryId].savedCityMap, sizeof(cityMap));
+                        for (int i = 0; i < MAX_CHUNKS; ++i) {
+                            freeHouseTree(chunks[i].houseRoot);
+                            chunks[i].x = countries[countryId].savedChunks[i].x;
+                            chunks[i].y = countries[countryId].savedChunks[i].y;
+                            chunks[i].width = countries[countryId].savedChunks[i].width;
+                            chunks[i].height = countries[countryId].savedChunks[i].height;
+                            chunks[i].valid = countries[countryId].savedChunks[i].valid;
+                            chunks[i].connectionCount = countries[countryId].savedChunks[i].connectionCount;
+                            
+                            for (int j = 0; j < MAX_CONNECTIONS; j++) {
+                                chunks[i].connections[j] = countries[countryId].savedChunks[i].connections[j];
+                            }
+                            
+                            chunks[i].houseRoot = copyChunkData(&countries[countryId].savedChunks[i], &chunks[i]);
                         }
+                        cityPlayerX = countries[countryId].lastCityPlayerX;
+                        cityPlayerY = countries[countryId].lastCityPlayerY;
+                        printCityMap();
                         
-                        chunks[i].houseRoot = copyChunkData(&countries[countryId].savedChunks[i], &chunks[i]);
+                        citySandbox();
+                        system("cls");
+                        printf("\033[H\033[J");
+                        printf("Returning to world map...\n");
+                        printMap();
+                        break;
+                    } 
+                    else if (choice == 'n' || choice == 'N') {
+                        printf("%c\n", choice);
+                        printf("Continuing world exploration...\n");
+                        
+                        Sleep(800);  
+                        system("cls");
+                        printf("\033[H\033[J");
+                        printMap();  
+                        break;
                     }
-                    cityPlayerX = countries[countryId].lastCityPlayerX;
-                    cityPlayerY = countries[countryId].lastCityPlayerY;
-                    printCityMap();
-                    
-                    citySandbox();
-                    system("cls");
-                    printf("\033[H\033[J");
-                    printf("Returning to world map...\n");
-                    printMap();
+                  
                 }
+            }
         }
     }
 }
