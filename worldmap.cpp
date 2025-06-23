@@ -471,7 +471,6 @@ void movePlayer(char direction, int numCountries) {
                 }
             }
 
-            // --- FIX: Save the city for the previous country before switching ---
             if (prevCountry >= 0 && prevCountry != countryId && countries[prevCountry].cityGenerated) {
                 memcpy(countries[prevCountry].savedCityMap, cityMap, sizeof(cityMap));
                 for (int i = 0; i < MAX_CHUNKS; ++i) {
@@ -487,7 +486,6 @@ void movePlayer(char direction, int numCountries) {
                 countries[prevCountry].lastCityPlayerX = cityPlayerX;
                 countries[prevCountry].lastCityPlayerY = cityPlayerY;
             }
-            // -------------------------------------------------------------------
 
             
                 if (prevCountry != countryId) {
@@ -499,7 +497,6 @@ void movePlayer(char direction, int numCountries) {
                     printf("\033[H\033[J");
                     currentCountryId = countryId;
                     
-                    // No need to check if city is generated - all cities are pre-generated                                                             
                     memcpy(cityMap, countries[countryId].savedCityMap, sizeof(cityMap));
                     for (int i = 0; i < MAX_CHUNKS; ++i) {
                         freeHouseTree(chunks[i].houseRoot);
@@ -510,7 +507,6 @@ void movePlayer(char direction, int numCountries) {
                         chunks[i].valid = countries[countryId].savedChunks[i].valid;
                         chunks[i].connectionCount = countries[countryId].savedChunks[i].connectionCount;
                         
-                        // Properly copy all connection data
                         for (int j = 0; j < MAX_CONNECTIONS; j++) {
                             chunks[i].connections[j] = countries[countryId].savedChunks[i].connections[j];
                         }
@@ -535,10 +531,10 @@ int initializeWorld(int numCountries) {
     srand(time(NULL));
     printf("\033[2J");
 
-    totalWorlds = 1; // Only one world
+    totalWorlds = 1; 
 
     clearMap();
-    int validCount = generateCountries(numCountries); // numCountries = 5
+    int validCount = generateCountries(numCountries); 
     printf("Successfully generated %d countries in the world\n", validCount);
 
     createEdges(numCountries);

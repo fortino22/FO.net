@@ -7,15 +7,20 @@
 
 
 bool initializeGameEnvironment(int* validCount) {
-  printf("\033[2J\033[H");
-  int numCountries = 5;
-  *validCount = initializeWorld(numCountries);
-  
-  if (*validCount <= 0) {
-      printf("Failed to generate countries. Please try again.\n");
-      return false;
-  }
-  return true;
+    static int worldGenerated = 0; 
+
+    if (!worldGenerated) {
+        printf("\033[2J\033[H");
+        int numCountries = 5;
+        *validCount = initializeWorld(numCountries);
+
+        if (*validCount <= 0) {
+            printf("Failed to generate countries. Please try again.\n");
+            return false;
+        }
+        worldGenerated = 1;
+    }
+    return true;
 }
 
 void displayGameInterface(AssignmentNode** assignments, int assignmentCount) {
