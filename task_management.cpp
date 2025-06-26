@@ -84,8 +84,9 @@ void getPasswordInputLogin(char* buffer, int size, const char* prompt) {
         if (!hasUpper || !hasDigit) {
 
             printf("Username or password wrong.\n");
-            // Sleep(2000);
-            // system("cls");
+            Sleep(100);
+            system("cls");
+            return; 
         } else {
             valid = 1;
         }
@@ -126,21 +127,29 @@ void registerUser(AVLNode** root) {
     char username[50], password[50];
     printf("\n===== Registration =====\n");
 
-   while (1) {
-    getInput(username, 50, "Enter username: ");
-    if (strlen(username) == 0) {
-        printf("Username cannot be empty. Please try again.\n");
-    } else if (strchr(username, ',')) {
-        printf("Username cannot contain a comma (,). Please try again.\n");
-    } else if (search(*root, username)) {
-        printf("Username already exists. Please choose another.\n");
-    } else {
-        break;
+    while (1) {
+        getInput(username, 50, "Enter username (press q to exit): ");
+        if (strlen(username) == 1 && (username[0] == 'q' || username[0] == 'Q')) {
+            printf("Registration cancelled.\n");
+            return;
+        }
+        if (strlen(username) == 0) {
+            printf("Username cannot be empty. Please try again.\n");
+        } else if (strchr(username, ',')) {
+            printf("Username cannot contain a comma (,). Please try again.\n");
+        } else if (search(*root, username)) {
+            printf("Username already exists. Please choose another.\n");
+        } else {
+            break;
+        }
     }
-}
 
     do {
-        getPasswordInput(password, 50, "Enter password: ");
+        getPasswordInput(password, 50, "Enter password (press q to exit): ");
+        if (strlen(password) == 1 && (password[0] == 'q' || password[0] == 'Q')) {
+            printf("Registration cancelled.\n");
+            return;
+        }
         if (strlen(password) == 0) {
             printf("Password cannot be empty. Please try again.\n");
         } else if (strlen(password) < 8) {
@@ -161,21 +170,26 @@ void registerUser(AVLNode** root) {
     printf("Registration successful! Your User ID is: %d\n", userId);
     printf("You have been registered as a worker.\n");
 }
-
 void loginUser(AVLNode* root, AssignmentNode** assignmentRoot) {
     char username[50], password[50];
     int loggedIn = 0;
 
     while (!loggedIn) {
         printf("\n===== Login =====\n");
-        getInput(username, 50, "Enter username: ");
-        getPasswordInputLogin(password, 50, "Enter password: ");
+        getInput(username, 50, "Enter username (press q to exit): ");
+        if (strlen(username) == 1 && (username[0] == 'q' || username[0] == 'Q')) {
+            system("cls");
+            return;
+        }
+        getPasswordInputLogin(password, 50, "Enter password (press q to exit): ");
+        if (strlen(password) == 1 && (password[0] == 'q' || password[0] == 'Q')) {
+            system("cls");
+            return;
+        }
 
         AVLNode* user = search(root, username);
         if (user) {
             if (strcmp(user->user.password, password) == 0) {
-                printf("Login successful!\n");
-                Sleep(2000);
                 system("cls");
                 if (strcmp(user->user.role, "manager") == 0) {
                     managerMenu(root, assignmentRoot, user->user.userId);
@@ -185,10 +199,12 @@ void loginUser(AVLNode* root, AssignmentNode** assignmentRoot) {
                 loggedIn = 1;
             } else {
                 printf("Username or password wrong.\n");
+                Sleep(500);
                 system("cls");
             }
         } else {
-            printf("Username not found.\n");
+            printf("Username or password wrong.\n");
+            Sleep(500);
             system("cls");
         }
     }
