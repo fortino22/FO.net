@@ -75,32 +75,33 @@ int handleUpdateMode(AssignmentNode** root, AssignmentNode** currentAssignments,
     printf("Enter assignment ID to update status, or press ESC to return to navigation mode\n");
     printf("\nEnter assignment ID (or press ESC to go back): ");
 
-    char idStr[16];
-    if (fgets(idStr, sizeof(idStr), stdin) == NULL) {
-    system("cls");
-    return 1;
+    int ch = _getch();
+    if (ch == 27) { // ESC key
+        system("cls");
+        return 1;
     }
-    idStr[strcspn(idStr, "\n")] = 0;
+    // Echo the first character if it's not ESC
+    putchar(ch);
 
-    if (strlen(idStr) == 1 && idStr[0] == 27) {
-    system("cls");
-    return 1;
-    }
+    char idStr[16] = {0};
+    idStr[0] = (char)ch;
+    fgets(idStr + 1, sizeof(idStr) - 1, stdin);
+    idStr[strcspn(idStr, "\n")] = 0;
 
     int valid = 1;
     if (strlen(idStr) == 0) valid = 0;
     for (int i = 0; idStr[i]; i++) {
-    if (idStr[i] < '0' || idStr[i] > '9') valid = 0;
+        if (idStr[i] < '0' || idStr[i] > '9') valid = 0;
     }
     if (!valid) {
-    printf("Invalid input. Please enter a valid numeric Assignment ID.\n");
-    printf("Press Enter to continue...");
-    while (getchar() != '\n');
-    return 2;
-}
+        printf("Invalid input. Please enter a valid numeric Assignment ID.\n");
+        printf("Press Enter to continue...");
+        while (getchar() != '\n');
+        return 2;
+    }
 
-int assignmentId = atoi(idStr);
-return processAssignmentUpdate(root, currentAssignments, assignmentCount, assignmentId);
+    int assignmentId = atoi(idStr);
+    return processAssignmentUpdate(root, currentAssignments, assignmentCount, assignmentId);
 }
 
 int processAssignmentUpdate(AssignmentNode** root, AssignmentNode** currentAssignments, 
