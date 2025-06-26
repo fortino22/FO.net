@@ -156,9 +156,6 @@ void unionSet(int* parent, int x, int y) {
 
 
 
-
-
-
 #define COLOR_RESET   "\033[0m"
 #define COLOR_CURSOR  "\033[1;32m"
 #define COLOR_HOUSE   "\033[1;34m"

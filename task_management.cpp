@@ -127,6 +127,8 @@ void registerUser(AVLNode** root) {
         getInput(username, 50, "Enter username: ");
         if (strlen(username) == 0) {
             printf("Username cannot be empty. Please try again.\n");
+        } else if (strchr(username, ',')) {
+            printf("Username cannot contain a comma (,). Please try again.\n");
         } else if (search(*root, username)) {
             printf("Username already exists. Please choose another.\n");
         } else {
@@ -138,8 +140,10 @@ void registerUser(AVLNode** root) {
         getPasswordInput(password, 50, "Enter password: ");
         if (strlen(password) == 0) {
             printf("Password cannot be empty. Please try again.\n");
+        } else if (strlen(password) < 8) {
+            printf("Password must be at least 8 characters long. Please try again.\n");
         }
-    } while (strlen(password) == 0);
+    } while (strlen(password) < 8);
 
     char role[20] = "worker";
 
