@@ -647,8 +647,6 @@ void printAllHouses(HouseNode* root) {
 }
 
 
-
-
 void housePlacementLoopForChunk(Chunk* cityChunk) {
     int cursorX = 0, cursorY = 0;
     char name[100], owner[100], location[100];
@@ -704,14 +702,22 @@ void housePlacementLoopForChunk(Chunk* cityChunk) {
                 location[strcspn(location, "\n")] = 0;
 
                 int electricPower = 0;
-                printf("Enter electric power (Watt): ");
-                scanf("%d", &electricPower);
-                while(getchar() != '\n');
+                while (1) {
+                    char buf[32];
+                    printf("Enter electric power (Watt): ");
+                    fgets(buf, sizeof(buf), stdin);
+                    if (sscanf(buf, "%d", &electricPower) == 1) break;
+                    printf("Invalid input. Please enter an integer.\n");
+                }
 
                 int internetSpeed = 0;
-                printf("Enter internet speed (Mbps): ");
-                scanf("%d", &internetSpeed);
-                while(getchar() != '\n');
+                while (1) {
+                    char buf[32];
+                    printf("Enter internet speed (Mbps): ");
+                    fgets(buf, sizeof(buf), stdin);
+                    if (sscanf(buf, "%d", &internetSpeed) == 1) break;
+                    printf("Invalid input. Please enter an integer.\n");
+                }
 
                 House house;
                 house.id = cityChunk->y * 10000 + cityChunk->x * 100 + cursorY * 10 + cursorX;
@@ -729,60 +735,3 @@ void housePlacementLoopForChunk(Chunk* cityChunk) {
     }
 }
 
-
-
-
-void housePlacementLoop() {
-    int cursorX = 0, cursorY = 0;
-    char name[100], owner[100];
-    drawGrid(cursorX, cursorY, houseRoot, GRID_COLS, GRID_ROWS);
-
-    while (1) {
-        int ch = _getch();
-        if (ch == 'q' || ch == 'Q') break;
-        else if (ch == 'w' || ch == 'W') { if (cursorY > 0) cursorY--; }
-        else if (ch == 's' || ch == 'S') { if (cursorY < GRID_ROWS-1) cursorY++; }
-        else if (ch == 'a' || ch == 'A') { if (cursorX > 0) cursorX--; }
-        else if (ch == 'd' || ch == 'D') { if (cursorX < GRID_COLS-1) cursorX++; }
-        else if (ch == 13) { 
-            HouseNode* existing = searchHouse(houseRoot, cursorX, cursorY);
-            if (existing) {
-                printf("\n--- House Detail ---\n");
-                printf("Name: %s\n", existing->house.name);
-                printf("Owner: %s\n", existing->house.owner);
-                printf("Electric Power: %d Watt\n", existing->house.electricPower);
-                printf("Internet Speed: %d Mbps\n", existing->house.internetSpeed);
-                printf("Press any key to continue...\n");
-                _getch();
-            } else {
-                printf("Enter house name: ");
-                fgets(name, sizeof(name), stdin);
-                name[strcspn(name, "\n")] = 0;
-                printf("Enter owner name: ");
-                fgets(owner, sizeof(owner), stdin);
-                owner[strcspn(owner, "\n")] = 0;
-
-                int electricPower = 0;
-                printf("Enter electric power (Watt): ");
-                scanf("%d", &electricPower);
-                while(getchar() != '\n');
-
-                int internetSpeed = 0;
-                printf("Enter internet speed (Mbps): ");
-                scanf("%d", &internetSpeed);
-                while(getchar() != '\n');
-
-                House house;
-                house.id = cursorY * GRID_COLS + cursorX;
-                strcpy(house.name, name);
-                strcpy(house.owner, owner);
-                house.gridX = cursorX;
-                house.gridY = cursorY;
-                house.electricPower = electricPower;
-                house.internetSpeed = internetSpeed;
-                houseRoot = insertHouse(houseRoot, house);
-            }
-        }
-        drawGrid(cursorX, cursorY, houseRoot, GRID_COLS, GRID_ROWS);
-    }
-}

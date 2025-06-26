@@ -615,7 +615,6 @@ int initializeWorld(int numCountries) {
 
     return validCount;
 }
-
 void startGameLoop(int numCountries) {
     char move;
     int running = 1;
@@ -627,6 +626,7 @@ void startGameLoop(int numCountries) {
         if (_kbhit()) {
             move = _getch();
             if (move == 'q' || move == 'Q') {
+                system("cls"); 
                 running = 0;
             } else {
                 movePlayer(move, numCountries);

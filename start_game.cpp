@@ -124,10 +124,11 @@ int processAssignmentUpdate(AssignmentNode** root, AssignmentNode** currentAssig
       system("cls");
       return 1;
   } else {
-      printf("Invalid assignment ID. Press Enter to continue...");
-      getchar();
-      return 2;
-  }
+        printf("Invalid assignment ID. Press Enter to continue...");
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF) {}
+        return 2;
+}
 }
 
 void startAssignment(AssignmentNode** root, int workerId) {
@@ -167,6 +168,8 @@ void startAssignment(AssignmentNode** root, int workerId) {
           int result = handleUpdateMode(root, currentAssignments, assignmentCount, &input);
           if (result == 1) {
               navigationMode = 1;
+          }else if(result == 2){
+            system("cls");
           }
       }
   }

@@ -122,7 +122,7 @@ void loginUser(AVLNode* root, AssignmentNode** assignmentRoot) {
     AVLNode* user = search(root, username);
     if (user && strcmp(user->user.password, password) == 0) {
         printf("Login successful!\n");
-        
+        system("cls");
         if (strcmp(user->user.role, "manager") == 0) {
             managerMenu(root, assignmentRoot, user->user.userId);
         } else {
