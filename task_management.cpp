@@ -4,7 +4,7 @@
 #include "task_management.h"
 #include <conio.h>
 #include "worldmap.h"
-
+#include "windows.h"
 void getInput(char* buffer, int size, const char* prompt) {
     printf("%s", prompt);
     fgets(buffer, size, stdin);
@@ -82,7 +82,10 @@ void getPasswordInputLogin(char* buffer, int size, const char* prompt) {
             if (buffer[j] >= '0' && buffer[j] <= '9') hasDigit = 1;
         }
         if (!hasUpper || !hasDigit) {
-            // printf("Password must contain at least one uppercase letter and one number. Please try again.\n");
+
+            printf("Username or password wrong.\n");
+            // Sleep(2000);
+            // system("cls");
         } else {
             valid = 1;
         }
@@ -161,22 +164,33 @@ void registerUser(AVLNode** root) {
 
 void loginUser(AVLNode* root, AssignmentNode** assignmentRoot) {
     char username[50], password[50];
-    printf("\n===== Login =====\n");
-    
-    getInput(username, 50, "Enter username: ");
-    getPasswordInputLogin(password, 50, "Enter password: ");
-    
-    AVLNode* user = search(root, username);
-    if (user && strcmp(user->user.password, password) == 0) {
-        printf("Login successful!\n");
-        system("cls");
-        if (strcmp(user->user.role, "manager") == 0) {
-            managerMenu(root, assignmentRoot, user->user.userId);
+    int loggedIn = 0;
+
+    while (!loggedIn) {
+        printf("\n===== Login =====\n");
+        getInput(username, 50, "Enter username: ");
+        getPasswordInputLogin(password, 50, "Enter password: ");
+
+        AVLNode* user = search(root, username);
+        if (user) {
+            if (strcmp(user->user.password, password) == 0) {
+                printf("Login successful!\n");
+                Sleep(2000);
+                system("cls");
+                if (strcmp(user->user.role, "manager") == 0) {
+                    managerMenu(root, assignmentRoot, user->user.userId);
+                } else {
+                    workerMenu(root, assignmentRoot, user->user.userId);
+                }
+                loggedIn = 1;
+            } else {
+                printf("Username or password wrong.\n");
+                system("cls");
+            }
         } else {
-            workerMenu(root, assignmentRoot, user->user.userId);
+            printf("Username not found.\n");
+            system("cls");
         }
-    } else {
-        printf("Invalid username or password.\n");
     }
 }
 

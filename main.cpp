@@ -5,7 +5,158 @@
 #include "avl.h"
 #include "task_management.h"
 
+#define RESET "\x1b[0m"
+#define BRIGHT_WHITE "\x1b[97m"
+#define BLUE "\x1b[34m"
+#define CYAN "\x1b[36m"
+#define WHITE "\x1b[37m"
 
+void clr() {
+    CONSOLE_CURSOR_INFO info;
+    info.dwSize = 100;
+    info.bVisible = FALSE;
+    COORD cursorPosition;
+    cursorPosition.X = 0;
+    cursorPosition.Y = 0;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cursorPosition);
+    HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleCursorInfo(consoleHandle, &info);
+  }
+  void animateAscii() {
+    const char *asciiArt[] = {
+        "                                     *****#                             "
+        "       ",
+        "                           ****                  ,****                  "
+        "        ",
+        "                      **%   //*(((#####%%(####((((//    **(             "
+        "        ",
+        "                  **/  //((#%%&%&&&&&&%&&&&&&#&&&&&%(#(//   **          "
+        "        ",
+        "               %*   /(#(%&&&&&&&&&&&&&,,...&&&&&&&&&&&#&(#///  **       "
+        "        ",
+        "             **  /(#%&&&&&&&&&&&&&&,,,,,,,,...&&&&&#&&&&&&&%((/  **     "
+        "        ",
+        "           **  /(#&&&&&&&&&&&&&&&,,,,,,,,,,,,,..&&&&#&&&&&&&&&#(// **   "
+        "        ",
+        "          *  /(#&&&%#&&&&&&&&&,,,,,,,,,,,,,,,(((&&&&&&&&&&%%#&&&#(/  ** "
+        "        ",
+        "        ** *(#%%&&&&&&&&&&#&,,,,,,,#,,,,,,(((&&&&&&&&&&&&&&&&&&&&%#(/ "
+        "%*        ",
+        "       ** /(#&&&&&&&&&&&&,,,,,,,,,,,,,,,(((&&&&&&&&&&&&&&&&&&&&&&&&#(/  "
+        "*       ",
+        "      (* /(#&%#&&&&&&&&,,,,,,,,,,,,,,%((&&&&&,,,...&&&&&&&&&%&&&&##&#(/ "
+        "%*      ",
+        "      *  "
+        "(#&&%&&&&&&,,,,,,,,%,,,,,,(((&&&&&,,,,,,,(..%&&&&&&&&&&&&&&&#(/ *#     ",
+        "     ** "
+        "/(%&&&&&&&,,,,,,,,,,,,,,%((&&&&&,,,,,,,,,,,,,...&&&&&&&&&&&&&%(/  *    "
+        " ",
+        "     ** "
+        "/#%&&&&&&&&,,,,,,,,,,,,,,,(((&&&&,,,,,,,,,,,%,,(..%&&#&&&&&%&&#(  *    "
+        " ",
+        "     *  "
+        "(#&&&&&&&&&&&%,,,,,(,,,,,,,,(((&&&&,,,,,,,,,,,,,,,...#&&&&&&&&#(/ *    "
+        " ",
+        "     ** "
+        "/#%&&&&&&&&&&&&&%,,,,,,,,,,,,,,,,(((&&&&,%,,,,,,,,,,,,(..%&&&%&&#(  *   "
+        "  ",
+        "     ** "
+        "/(%&&&&&&&&&&&&&&&%,,,,,,,,,,(((&&&&&,,,%,,,,,,,,,,,(((&&&&&&%(/  *    "
+        " ",
+        "      *  "
+        "(#&&%&&&&&&&&&&&&&&&,,,,,%((%&&&&%,,,,,,,,,,,,,,(((&&&&&&&&&#(/ *      ",
+        "      /* /(#&##&&&&&&&&&&&&&&&&%(((&&&&&,,,,,,,,,,,,,%,(((&&%&&&&%#&%(/ "
+        "**      ",
+        "       ** /(#&&&&&&&&&&&&&&&&&&&&&&&&%,,,%,,,,,,,,,,(((&&&&&&&&&&&&%(/  "
+        "*       ",
+        "        ** .(#&&&&&&&&&&&&#&&&&&&&&,,,,,,,,,,,,,,,(((&&&&&&&&&&&&&#(/ "
+        "**        ",
+        "          *  /(%&&&%#&&&&&&&&&&&%,,,,,,,,,,,,,%(((&&&&&&&&&%#&&%%(/  ** "
+        "        ",
+        "           **  ((%&&&&&&&&&&&&&&&&,,,,,,,,,,,(((&&&&%&&&&&&&&&%#(/ **   "
+        "        ",
+        "             **  /(#%&&&&&&&&&&&&&&&&,,,,,(((&&&&&&#&&&&&&&%((/  **     "
+        "        ",
+        "                *#/(#(&&&&&&&&&&&&&&&,(((&&&&&&&&&&&%&(#/(/  **         "
+        "      ",
+        "                  ***  /*(#%%&&#&&&&&&%&&&&&&%&&&&&%(#((/   **          "
+        "        ",
+        "                      ***   ///((###%%%%%(%%###((((/    **              "
+        "        ",
+        "                           ****                  %***                   "
+        "       ",
+        "                                     #*****                             "
+        "         "};
+  
+    int numLines = sizeof(asciiArt) / sizeof(asciiArt[0]);
+    int len = (int)strlen(asciiArt[0]);
+    int steps = (len + 1) / 2;
+  
+    static char buffer[256];
+  
+    for (int step = 0; step <= steps; step += 2) {
+      for (int i = 0; i < numLines; i++) {
+        memset(buffer, ' ', len);
+        buffer[len] = '\0';
+  
+        for (int j = 0; j < step && j < len; j++) {
+          buffer[j] = asciiArt[i][j];
+          if (buffer[j] == '*') {
+            printf("%s%c", BRIGHT_WHITE, buffer[j]);
+          } else if (buffer[j] == '&') {
+            printf("%s%c", BLUE, buffer[j]);
+          } else if (buffer[j] == ',') {
+            printf("%s%c", CYAN, buffer[j]);
+          } else {
+            printf("%s%s%c", BRIGHT_WHITE, BRIGHT_WHITE, buffer[j]);
+          }
+        }
+        for (int j = step; j < len - step; j++) {
+          if (asciiArt[i][j] == ',') {
+            printf("%s%c", CYAN, asciiArt[i][j]);
+          } else {
+            printf("%s%s ", BRIGHT_WHITE, BRIGHT_WHITE);
+          }
+        }
+        for (int j = len - step; j < len; j++) {
+          if (j >= 0 && j < len) {
+            buffer[j] = asciiArt[i][j];
+            if (buffer[j] == '*') {
+              printf("%s%c", BRIGHT_WHITE, buffer[j]);
+            } else if (buffer[j] == '&') {
+              printf("%s%c", BLUE, buffer[j]);
+            } else if (buffer[j] == ',') {
+              printf("%s%c", CYAN, buffer[j]);
+            } else {
+              printf("%s%s%c", BRIGHT_WHITE, BRIGHT_WHITE, buffer[j]);
+            }
+          }
+        }
+        printf("%s\n", RESET);
+      }
+      if (step < steps) {
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(hConsole, &csbi);
+        COORD pos = {0, csbi.dwCursorPosition.Y - numLines};
+        SetConsoleCursorPosition(hConsole, pos);
+      }
+      Sleep(10);
+    }
+  
+    printf("\n");
+    printf("%s            "
+           "===========================================================\n",
+           CYAN);
+    printf("            |      Confront the challenges of learning and outgrow   "
+           " |\n");
+    printf("            |              the boundaries together ~ 24-2            "
+           " |\n");
+    printf("            "
+           "===========================================================%s\n",
+           RESET);
+  }
+  
 
 int main() {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -75,8 +226,10 @@ int main() {
                 break;
             case 0:
                 system("cls");
-                saveAllData(userRoot, assignmentRoot);
-                printf("Thank you for using our system!\n");
+                // saveAllData(userRoot, assignmentRoot);
+                animateAscii();
+                Sleep(3000);
+                exit(0);
                 break;
         }
     } while (choice != 0);

@@ -76,11 +76,10 @@ int handleUpdateMode(AssignmentNode** root, AssignmentNode** currentAssignments,
     printf("\nEnter assignment ID (or press ESC to go back): ");
 
     int ch = _getch();
-    if (ch == 27) { // ESC key
+    if (ch == 27) { 
         system("cls");
         return 1;
     }
-    // Echo the first character if it's not ESC
     putchar(ch);
 
     char idStr[16] = {0};
