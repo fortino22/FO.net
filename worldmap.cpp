@@ -605,6 +605,7 @@ int initializeWorld(int numCountries) {
             }
         }
     }
+
     printf("All cities generated!\n");
 
     system("cls");

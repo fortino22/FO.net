@@ -4,7 +4,7 @@
 #include "task_management.h"
 #include <conio.h>
 #include "worldmap.h"
-
+#include "windows.h"
 
 bool initializeGameEnvironment(int* validCount) {
     static int worldGenerated = 0; 
@@ -144,46 +144,57 @@ int processAssignmentUpdate(AssignmentNode** root, AssignmentNode** currentAssig
 
 void startAssignment(AssignmentNode** root, int workerId) {
     system("cls");
-  int validCount;
-  
-  if (!initializeGameEnvironment(&validCount)) {
-      return;
-  }
-  
-  int assignmentCount = 0;
-  AssignmentNode* currentAssignments[10];
-  collectUserAssignments(*root, workerId, currentAssignments, &assignmentCount);
-  
-  if (assignmentCount == 0) {
-      printf("You don't have any assignments yet.\n");
-      printf("Press Enter to return...");
-      getchar();
-      return;
-  }
-  
-  char input;
-  int running = 1;
-  int navigationMode = 1;
-  
-  while (running) {
-      displayGameInterface(currentAssignments, assignmentCount);
-      
-      if (navigationMode) {
-          int result = handleNavigationMode(&input);
-          if (result == 0) {
-              running = 0;
-          } else if (result == 2) {
-              navigationMode = 0;
-          }
-      } else {
-          int result = handleUpdateMode(root, currentAssignments, assignmentCount, &input);
-          if (result == 1) {
-              navigationMode = 1;
-          }else if(result == 2){
-            system("cls");
-          }
-      }
-  }
-  
-  printf("\n\033[0mReturning to work menu...\n");
+
+    printf("The map will be generated first, please wait...\n");
+    int barWidth = 40;
+    for (int i = 0; i <= barWidth; i++) {
+        printf("\r[");
+        for (int j = 0; j < i; j++) printf("#");
+        for (int j = i; j < barWidth; j++) printf(" ");
+        printf("] %3d%%", (i * 100) / barWidth);
+        fflush(stdout);
+        Sleep(40);
+    }
+    printf("\n");
+
+    int validCount;
+    if (!initializeGameEnvironment(&validCount)) {
+        return;
+    }
+
+    int assignmentCount = 0;
+    AssignmentNode* currentAssignments[10];
+    collectUserAssignments(*root, workerId, currentAssignments, &assignmentCount);
+
+    if (assignmentCount == 0) {
+        printf("You don't have any assignments yet.\n");
+        printf("Press Enter to return...");
+        getchar();
+        return;
+    }
+
+    char input;
+    int running = 1;
+    int navigationMode = 1;
+
+    while (running) {
+        displayGameInterface(currentAssignments, assignmentCount);
+
+        if (navigationMode) {
+            int result = handleNavigationMode(&input);
+            if (result == 0) {
+                running = 0;
+            } else if (result == 2) {
+                navigationMode = 0;
+            }
+        } else {
+            int result = handleUpdateMode(root, currentAssignments, assignmentCount, &input);
+            if (result == 1) {
+                navigationMode = 1;
+            } else if (result == 2) {
+                system("cls");
+            }
+        }
+    }
+    printf("\n\033[0mReturning to work menu...\n");
 }
