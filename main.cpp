@@ -8,6 +8,12 @@
 
 
 int main() {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO cursorInfo;
+    GetConsoleCursorInfo(hConsole, &cursorInfo);
+    cursorInfo.bVisible = FALSE;
+    SetConsoleCursorInfo(hConsole, &cursorInfo);
+
     HWND console = GetConsoleWindow();
     ShowWindow(console, SW_MAXIMIZE);
     AVLNode* userRoot = NULL;
