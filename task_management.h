@@ -25,7 +25,7 @@ void viewWorkers(AVLNode* root);
 
 void viewAssignedTasks(AssignmentNode* root, int userId);
 
-void updateTaskStatus(AssignmentNode** root, int workerId);
+int updateTaskStatus(AssignmentNode** root, int workerId);
 
 
 void saveAllData(AVLNode* userRoot, AssignmentNode* assignmentRoot);

@@ -123,18 +123,18 @@ void registerUser(AVLNode** root) {
     char username[50], password[50];
     printf("\n===== Registration =====\n");
 
-    while (1) {
-        getInput(username, 50, "Enter username: ");
-        if (strlen(username) == 0) {
-            printf("Username cannot be empty. Please try again.\n");
-        } else if (strchr(username, ',')) {
-            printf("Username cannot contain a comma (,). Please try again.\n");
-        } else if (search(*root, username)) {
-            printf("Username already exists. Please choose another.\n");
-        } else {
-            break;
-        }
+   while (1) {
+    getInput(username, 50, "Enter username: ");
+    if (strlen(username) == 0) {
+        printf("Username cannot be empty. Please try again.\n");
+    } else if (strchr(username, ',')) {
+        printf("Username cannot contain a comma (,). Please try again.\n");
+    } else if (search(*root, username)) {
+        printf("Username already exists. Please choose another.\n");
+    } else {
+        break;
     }
+}
 
     do {
         getPasswordInput(password, 50, "Enter password: ");
@@ -274,8 +274,9 @@ void workerMenu(AVLNode* root, AssignmentNode** assignmentRoot, int workerId) {
                 break;
             case 2:
                 system("cls");
-                updateTaskStatus(assignmentRoot, workerId);
-                saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE);
+                if (updateTaskStatus(assignmentRoot, workerId)) {
+                    saveAssignmentsToFile(*assignmentRoot, ASSIGNMENTS_FILE);
+                }
                 break;
             case 3:
                 system("cls");
@@ -375,7 +376,7 @@ void viewAssignedTasks(AssignmentNode* root, int userId) {
     displayUserAssignments(root, userId);
 }
 
-void updateTaskStatus(AssignmentNode** root, int workerId) {
+int updateTaskStatus(AssignmentNode** root, int workerId) {
     int assignmentId;
     char status[20];
     char input[32];
@@ -402,16 +403,22 @@ void updateTaskStatus(AssignmentNode** root, int workerId) {
 
     AssignmentNode* assignment = searchAssignment(*root, assignmentId);
     if (!assignment || assignment->assignment.userId != workerId) {
-        printf("Invalid assignment ID or you don't have permission to update this task.\n");
-        return;
+        printf("Invalid assignment ID.\n");
+        return 0;
     }
 
     printf("Current status: %s\n", assignment->assignment.status);
 
     getValidStatus(status, 20);
 
+    if (strcmp(assignment->assignment.status, status) == 0) {
+        printf("Status is already '%s'. No update performed.\n", status);
+        return 0;
+    }
+
     *root = updateAssignmentStatus(*root, assignmentId, status);
     printf("Task status updated successfully!\n");
+    return 1; 
 }
 
 void saveAllData(AVLNode* userRoot, AssignmentNode* assignmentRoot) {
