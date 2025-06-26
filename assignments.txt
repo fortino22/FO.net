@@ -1,5 +1,4 @@
 3074,4288,test,test,in-progress
 3791,4288,test,test,completed
 5298,4288,ru,ru,pending
-6571,5804,Subco C Ganteng,RU subco paling ganteng,pending
-6888,4288,Jemput Nadia,jangan sampai telat,in-progress
+6571,5804,Subco C Ganteng,RU subco paling ganteng,in-progress

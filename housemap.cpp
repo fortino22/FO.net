@@ -706,8 +706,14 @@ void housePlacementLoopForChunk(Chunk* cityChunk) {
                     char buf[32];
                     printf("Enter electric power (Watt): ");
                     fgets(buf, sizeof(buf), stdin);
-                    if (sscanf(buf, "%d", &electricPower) == 1) break;
-                    printf("Invalid input. Please enter an integer.\n");
+                    buf[strcspn(buf, "\n")] = 0;
+                    int valid = 1;
+                    if (strlen(buf) == 0) valid = 0;
+                    for (int i = 0; buf[i]; i++) {
+                        if (buf[i] < '0' || buf[i] > '9') valid = 0;
+                    }
+                    if (valid && sscanf(buf, "%d", &electricPower) == 1) break;
+                    printf("Invalid input. Please enter a positive integer.\n");
                 }
 
                 int internetSpeed = 0;
@@ -715,8 +721,14 @@ void housePlacementLoopForChunk(Chunk* cityChunk) {
                     char buf[32];
                     printf("Enter internet speed (Mbps): ");
                     fgets(buf, sizeof(buf), stdin);
-                    if (sscanf(buf, "%d", &internetSpeed) == 1) break;
-                    printf("Invalid input. Please enter an integer.\n");
+                    buf[strcspn(buf, "\n")] = 0;
+                    int valid = 1;
+                    if (strlen(buf) == 0) valid = 0;
+                    for (int i = 0; buf[i]; i++) {
+                        if (buf[i] < '0' || buf[i] > '9') valid = 0;
+                    }
+                    if (valid && sscanf(buf, "%d", &internetSpeed) == 1) break;
+                    printf("Invalid input. Please enter a positive integer.\n");
                 }
 
                 House house;
@@ -734,4 +746,3 @@ void housePlacementLoopForChunk(Chunk* cityChunk) {
         }
     }
 }
-

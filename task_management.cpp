@@ -50,6 +50,45 @@ void getPasswordInput(char* buffer, int size, const char* prompt) {
     }
 }
 
+void getPasswordInputLogin(char* buffer, int size, const char* prompt) {
+    int valid = 0;
+    while (!valid) {
+        printf("%s", prompt);
+        int i = 0;
+        char ch;
+        while (1) {
+            ch = _getch();
+            if (ch == 13) { 
+                buffer[i] = '\0';
+                break;
+            } else if (ch == 8) { 
+                if (i > 0) {
+                    i--;
+                    printf("\b \b");
+                }
+            } else if (ch == 27) { 
+                buffer[0] = '\0';
+                break;
+            } else if (i < size - 1) {
+                buffer[i++] = ch;
+                printf("*");
+            }
+        }
+        printf("\n");
+
+        int hasUpper = 0, hasDigit = 0;
+        for (int j = 0; buffer[j]; j++) {
+            if (buffer[j] >= 'A' && buffer[j] <= 'Z') hasUpper = 1;
+            if (buffer[j] >= '0' && buffer[j] <= '9') hasDigit = 1;
+        }
+        if (!hasUpper || !hasDigit) {
+            // printf("Password must contain at least one uppercase letter and one number. Please try again.\n");
+        } else {
+            valid = 1;
+        }
+    }
+}
+
 void getValidStatus(char* buffer, int size) {
     int validStatus = 0;
     while (!validStatus) {
@@ -84,12 +123,16 @@ void registerUser(AVLNode** root) {
     char username[50], password[50];
     printf("\n===== Registration =====\n");
 
-    do {
+    while (1) {
         getInput(username, 50, "Enter username: ");
         if (strlen(username) == 0) {
             printf("Username cannot be empty. Please try again.\n");
+        } else if (search(*root, username)) {
+            printf("Username already exists. Please choose another.\n");
+        } else {
+            break;
         }
-    } while (strlen(username) == 0);
+    }
 
     do {
         getPasswordInput(password, 50, "Enter password: ");
@@ -117,7 +160,7 @@ void loginUser(AVLNode* root, AssignmentNode** assignmentRoot) {
     printf("\n===== Login =====\n");
     
     getInput(username, 50, "Enter username: ");
-    getPasswordInput(password, 50, "Enter password: ");
+    getPasswordInputLogin(password, 50, "Enter password: ");
     
     AVLNode* user = search(root, username);
     if (user && strcmp(user->user.password, password) == 0) {
@@ -331,23 +374,38 @@ void viewAssignedTasks(AssignmentNode* root, int userId) {
 void updateTaskStatus(AssignmentNode** root, int workerId) {
     int assignmentId;
     char status[20];
-    
+    char input[32];
+
     displayUserAssignments(*root, workerId);
-    
-    printf("\nEnter Assignment ID to update: ");
-    scanf("%d", &assignmentId);
-    getchar(); 
-    
+
+    while (1) {
+        printf("\nEnter Assignment ID to update: ");
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = 0;
+
+        int valid = 1;
+        if (strlen(input) == 0) valid = 0;
+        for (int i = 0; input[i]; i++) {
+            if (input[i] < '0' || input[i] > '9') valid = 0;
+        }
+        if (valid) {
+            assignmentId = atoi(input);
+            break;
+        } else {
+            printf("Invalid input. Please enter a valid numeric Assignment ID.\n");
+        }
+    }
+
     AssignmentNode* assignment = searchAssignment(*root, assignmentId);
     if (!assignment || assignment->assignment.userId != workerId) {
         printf("Invalid assignment ID or you don't have permission to update this task.\n");
         return;
     }
-    
+
     printf("Current status: %s\n", assignment->assignment.status);
-    
+
     getValidStatus(status, 20);
-    
+
     *root = updateAssignmentStatus(*root, assignmentId, status);
     printf("Task status updated successfully!\n");
 }
